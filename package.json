@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "install-client": "cd client && npm install",
     "build-client": "cd client && npm run build",
-    "setup": "npm install && npm run install-client && npm run build-client"
+    "setup": "npm install && npm run install-client && npm run build-client",
+    "build": "npm run install-client && npm run build-client"
   },
   "keywords": [],
   "author": "",
