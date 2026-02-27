@@ -1,0 +1,88 @@
+.join-room {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 20px;
+}
+
+.join-card {
+  background: #1a1a2e;
+  border: 1px solid #16213e;
+  border-radius: 16px;
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.join-card h2 {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.join-subtitle {
+  color: #888;
+  text-align: center;
+  margin-bottom: 28px;
+  font-size: 0.9rem;
+}
+
+.join-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 14px 16px;
+  background: #0f0e17;
+  border: 2px solid #16213e;
+  border-radius: 10px;
+  color: #e8e8e8;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+.input-group input:focus {
+  border-color: #e94560;
+}
+
+.input-group input::placeholder {
+  color: #555;
+}
+
+.error-msg {
+  color: #e94560;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.join-btn {
+  background: linear-gradient(135deg, #e94560, #c23152);
+  color: #fff;
+  border: none;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  transition: opacity 0.2s, transform 0.1s;
+  margin-top: 6px;
+}
+
+.join-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.join-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.join-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

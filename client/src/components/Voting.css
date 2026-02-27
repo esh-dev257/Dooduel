@@ -1,0 +1,109 @@
+.voting {
+  text-align: center;
+  width: 100%;
+}
+
+.voting h2 {
+  font-size: 1.3rem;
+  margin-bottom: 16px;
+}
+
+.vote-error {
+  color: #e94560;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.voted-msg {
+  color: #33cc33;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.drawings-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+}
+
+.drawing-card {
+  background: #1a1a2e;
+  border: 2px solid #16213e;
+  border-radius: 12px;
+  padding: 12px;
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+.drawing-card:hover:not(.self) {
+  border-color: #444;
+  transform: translateY(-2px);
+}
+
+.drawing-card.voted {
+  border-color: #33cc33;
+  box-shadow: 0 0 12px rgba(51, 204, 51, 0.2);
+}
+
+.drawing-card.self {
+  opacity: 0.7;
+}
+
+.mini-canvas {
+  border-radius: 6px;
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.drawing-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  gap: 10px;
+}
+
+.drawing-author {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voting-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.vote-btn {
+  background: linear-gradient(135deg, #0099ff, #0077cc);
+  color: #fff;
+  border: none;
+  padding: 8px 24px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.vote-btn:hover {
+  opacity: 0.85;
+}
+
+.voted-badge {
+  color: #33cc33;
+  font-weight: 600;
+  font-size: 0.85rem;
+}

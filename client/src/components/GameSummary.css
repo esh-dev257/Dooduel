@@ -1,0 +1,350 @@
+.game-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  gap: 32px;
+}
+
+.summary-title {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #e94560, #ffcc00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Final Leaderboard */
+.final-leaderboard {
+  width: 100%;
+  text-align: center;
+}
+
+.final-leaderboard h2 {
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin-bottom: 16px;
+}
+
+.podium {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.podium-place {
+  background: #1a1a2e;
+  border: 2px solid #16213e;
+  border-radius: 12px;
+  padding: 20px 24px;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.podium-place.place-1 {
+  border-color: #ffcc00;
+  box-shadow: 0 0 20px rgba(255, 204, 0, 0.15);
+}
+
+.podium-place.place-2 {
+  border-color: #c0c0c0;
+}
+
+.podium-place.place-3 {
+  border-color: #cd7f32;
+}
+
+.podium-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.podium-avatar-emoji {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.podium-medal {
+  font-size: 2rem;
+}
+
+.podium-name {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.podium-score {
+  color: #ffcc00;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.podium-achievements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+  justify-content: center;
+}
+
+.achievement-badge {
+  background: rgba(233, 69, 96, 0.15);
+  border: 1px solid rgba(233, 69, 96, 0.3);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rest-standings {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  border-collapse: collapse;
+}
+
+.rest-standings td {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.rest-standings td:first-child {
+  color: #888;
+  width: 40px;
+}
+
+.rest-standings td:last-child {
+  text-align: right;
+  font-weight: 700;
+  color: #ffcc00;
+}
+
+/* Achievements */
+.achievements-section {
+  width: 100%;
+  text-align: center;
+}
+
+.achievements-section h2 {
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin-bottom: 16px;
+}
+
+.achievements-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.achievement-card {
+  background: #1a1a2e;
+  border: 1px solid #16213e;
+  border-radius: 10px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.achievement-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.rest-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.achievement-icon {
+  font-size: 1.8rem;
+}
+
+.achievement-info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.achievement-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.achievement-player {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+/* Drawing Collage */
+.collage-section {
+  width: 100%;
+  text-align: center;
+}
+
+.collage-section h2 {
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin-bottom: 16px;
+}
+
+.collage-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+}
+
+.collage-item {
+  background: #1a1a2e;
+  border: 1px solid #16213e;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.collage-canvas {
+  border-radius: 6px;
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.collage-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.collage-round {
+  font-size: 0.7rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.collage-prompt {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffcc00;
+}
+
+.collage-winner {
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+/* Actions */
+.summary-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.share-card-btn {
+  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  color: #fff;
+  border: none;
+  padding: 14px 36px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.share-card-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.share-collage-btn {
+  background: linear-gradient(135deg, #0099ff, #0077cc);
+  color: #fff;
+  border: none;
+  padding: 14px 36px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.share-collage-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.back-lobby-btn {
+  background: transparent;
+  color: #aaa;
+  border: 1px solid #444;
+  padding: 14px 36px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.back-lobby-btn:hover {
+  border-color: #e94560;
+  color: #e94560;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .game-summary {
+    padding: 16px;
+    gap: 24px;
+  }
+
+  .podium {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .podium-place {
+    min-width: 200px;
+  }
+
+  .collage-grid {
+    gap: 10px;
+  }
+}

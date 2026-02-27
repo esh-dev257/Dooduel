@@ -1,0 +1,118 @@
+.canvas-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.draw-canvas {
+  border: 2px solid #333;
+  border-radius: 8px;
+  background: #fff;
+  cursor: crosshair;
+  max-width: 100%;
+  height: auto;
+  touch-action: none;
+}
+
+.draw-canvas.disabled {
+  cursor: default;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.canvas-tools {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  background: #1a1a2e;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid #16213e;
+}
+
+.color-palette {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  outline: none;
+  transition: transform 0.1s, border-color 0.15s;
+}
+
+.color-swatch:hover {
+  transform: scale(1.15);
+}
+
+.color-swatch.active {
+  border-color: #e94560;
+  transform: scale(1.15);
+  box-shadow: 0 0 6px rgba(233, 69, 96, 0.5);
+}
+
+.size-picker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.size-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background: #0f0e17;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s;
+}
+
+.size-btn.active {
+  border-color: #e94560;
+}
+
+.size-dot {
+  display: block;
+  border-radius: 50%;
+  background: #e8e8e8;
+}
+
+.canvas-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.tool-btn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #0f0e17;
+  color: #ccc;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.tool-btn:hover {
+  border-color: #666;
+  color: #fff;
+}
+
+.tool-btn.danger {
+  border-color: #e94560;
+  color: #e94560;
+}
+
+.tool-btn.danger:hover {
+  background: #e94560;
+  color: #fff;
+}
