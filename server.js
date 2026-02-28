@@ -3,6 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const { registerHandlers } = require('./socketHandlers');
+const { startRoomCleaner, stopRoomCleaner } = require('./roomManager');
 
 const app = express();
 const server = http.createServer(app);
@@ -35,4 +36,20 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  // Clean stale rooms every 60 seconds
+  startRoomCleaner(60000);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received — shutting down');
+  stopRoomCleaner();
+  io.close();
+  server.close(() => process.exit(0));
+});
+process.on('SIGINT', () => {
+  console.log('SIGINT received — shutting down');
+  stopRoomCleaner();
+  io.close();
+  server.close(() => process.exit(0));
 });

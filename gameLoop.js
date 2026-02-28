@@ -1,6 +1,6 @@
 const {
   getRoom,
-  getAllDrawings,
+  getAnonymousDrawings,
   tallyVotes,
   resetRound,
   getRoomState,
@@ -16,6 +16,7 @@ const { rateDrawing } = require('./rateDrawing');
 const MAX_ROUNDS = 3;
 const VOTING_DURATION = 20;
 const RESULT_DURATION = 8;
+const GAME_OVER_DELAY = 20; // Extra time for final round results
 
 function startGame(io, roomId) {
   const room = getRoom(roomId);
@@ -37,6 +38,7 @@ function startGame(io, roomId) {
   }
 
   room.round += 1;
+  console.log(`[${roomId}] Game started — Round ${room.round}/${MAX_ROUNDS}`);
   startDrawingPhase(io, roomId);
 }
 
@@ -46,12 +48,25 @@ function startDrawingPhase(io, roomId) {
 
   clearRoomTimer(roomId);
 
+  // Verify enough players
+  if (Object.keys(room.players).length < 2) {
+    room.gameState = 'WAITING';
+    io.to(roomId).emit('gameStateChange', {
+      gameState: 'WAITING',
+      players: room.players,
+      host: room.host
+    });
+    return;
+  }
+
   const { prompt, difficulty, duration } = getPromptForRound(room.round);
 
   room.gameState = 'DRAWING';
   room.currentPrompt = prompt;
   room.drawings = {};
   room.votes = {};
+
+  console.log(`[${roomId}] DRAWING phase — "${prompt}" (${difficulty}, ${duration}s)`);
 
   io.to(roomId).emit('gameStateChange', {
     gameState: 'DRAWING',
@@ -71,9 +86,11 @@ function startDrawingPhase(io, roomId) {
     if (remaining <= 0) {
       clearInterval(room.timer);
       room.timer = null;
+      room.timerType = null;
       startVotingPhase(io, roomId);
     }
   }, 1000);
+  room.timerType = 'interval';
 }
 
 function startVotingPhase(io, roomId) {
@@ -83,19 +100,28 @@ function startVotingPhase(io, roomId) {
   clearRoomTimer(roomId);
 
   room.gameState = 'VOTING';
-  const drawings = getAllDrawings(roomId);
+
+  // Get anonymous drawings (shuffled, no usernames/avatars)
+  const anonDrawings = getAnonymousDrawings(roomId);
 
   // Skip voting if nobody drew anything
-  if (Object.keys(drawings).length === 0) {
+  if (Object.keys(anonDrawings).length === 0) {
     startResultPhase(io, roomId);
     return;
   }
 
-  io.to(roomId).emit('gameStateChange', {
-    gameState: 'VOTING',
-    drawings,
-    duration: VOTING_DURATION
-  });
+  console.log(`[${roomId}] VOTING phase — ${Object.keys(anonDrawings).length} drawings`);
+
+  // Send per-player to include their own anonId
+  for (const socketId of Object.keys(room.players)) {
+    const yourAnonId = room.anonReverseMap?.[socketId] || null;
+    io.to(socketId).emit('gameStateChange', {
+      gameState: 'VOTING',
+      drawings: anonDrawings,
+      yourAnonId,
+      duration: VOTING_DURATION
+    });
+  }
 
   let remaining = VOTING_DURATION;
 
@@ -106,9 +132,21 @@ function startVotingPhase(io, roomId) {
     if (remaining <= 0) {
       clearInterval(room.timer);
       room.timer = null;
+      room.timerType = null;
       startResultPhase(io, roomId);
     }
   }, 1000);
+  room.timerType = 'interval';
+}
+
+// Called when all players vote early
+function advanceToResults(io, roomId) {
+  const room = getRoom(roomId);
+  if (!room || room.gameState !== 'VOTING') return;
+
+  console.log(`[${roomId}] All players voted — advancing early`);
+  clearRoomTimer(roomId);
+  startResultPhase(io, roomId);
 }
 
 function startResultPhase(io, roomId) {
@@ -119,6 +157,8 @@ function startResultPhase(io, roomId) {
 
   room.gameState = 'RESULT';
   const results = tallyVotes(roomId);
+
+  console.log(`[${roomId}] RESULT phase — Round ${room.round}`);
 
   // Rate each player's drawing and award bonus points
   const ratings = {};
@@ -156,34 +196,60 @@ function startResultPhase(io, roomId) {
   io.to(roomId).emit('roomUpdate', getRoomState(roomId));
 
   const isFinalRound = room.round >= MAX_ROUNDS;
+  const resultDuration = isFinalRound ? GAME_OVER_DELAY : RESULT_DURATION;
 
   io.to(roomId).emit('gameStateChange', {
     gameState: 'RESULT',
     results,
     ratings,
-    duration: RESULT_DURATION,
+    duration: resultDuration,
     round: room.round,
     totalRounds: MAX_ROUNDS,
     isFinalRound
   });
 
+  // Timer ticks for result phase countdown
+  let resultRemaining = resultDuration;
+  const resultTick = setInterval(() => {
+    resultRemaining -= 1;
+    io.to(roomId).emit('timerTick', { remaining: resultRemaining });
+    if (resultRemaining <= 0) {
+      clearInterval(resultTick);
+    }
+  }, 1000);
+
   // After result display
   room.timer = setTimeout(() => {
+    clearInterval(resultTick);
     room.timer = null;
+    room.timerType = null;
     resetRound(roomId);
 
     if (isFinalRound) {
       // Game over — send summary then reset server state
-      // Don't emit roomUpdate here; it would override GAME_OVER with WAITING
       const summary = getGameSummary(roomId);
       io.to(roomId).emit('gameOver', summary);
       resetGame(roomId);
     } else {
+      // Verify enough players before next round
+      const currentRoom = getRoom(roomId);
+      if (!currentRoom || Object.keys(currentRoom.players).length < 2) {
+        if (currentRoom) {
+          currentRoom.gameState = 'WAITING';
+          io.to(roomId).emit('gameStateChange', {
+            gameState: 'WAITING',
+            players: currentRoom.players,
+            host: currentRoom.host
+          });
+        }
+        return;
+      }
       // Auto-start next round
-      room.round += 1;
+      currentRoom.round += 1;
       startDrawingPhase(io, roomId);
     }
-  }, RESULT_DURATION * 1000);
+  }, resultDuration * 1000);
+  room.timerType = 'timeout';
 }
 
-module.exports = { startGame };
+module.exports = { startGame, advanceToResults };

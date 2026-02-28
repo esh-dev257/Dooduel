@@ -20,11 +20,13 @@ function PlayerList({ players, host, socketId }) {
               </span>
             </div>
             <div className="player-info">
-              <span className="player-name">
-                {player.username}
-                {id === host && <span className="host-badge">HOST</span>}
-                {id === socketId && <span className="you-badge">YOU</span>}
-              </span>
+              <div className="player-name-row">
+                <span className="player-name-text">{player.username}</span>
+                <div className="player-badges">
+                  {id === host && <span className="host-badge">HOST</span>}
+                  {id === socketId && <span className="you-badge">YOU</span>}
+                </div>
+              </div>
               <span className="player-score-live">{player.score} pts</span>
             </div>
             <span className="player-rank">#{index + 1}</span>

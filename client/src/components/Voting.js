@@ -1,13 +1,14 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import socket from '../socket';
+import Canvas from './Canvas';
 import './Voting.css';
 
-const ORIGINAL_W = 800;
-const ORIGINAL_H = 560;
+const ORIGINAL_W = Canvas.CANVAS_WIDTH || 800;
+const ORIGINAL_H = Canvas.CANVAS_HEIGHT || 560;
 const MINI_W = 360;
 const MINI_H = 252;
 
-// Replays stroke data onto a canvas
+// Replays stroke data onto a mini canvas (with smooth bezier + erase + fill support)
 function replayStrokes(canvas, strokes) {
   if (!canvas) return;
 
@@ -19,31 +20,11 @@ function replayStrokes(canvas, strokes) {
   ctx.fillRect(0, 0, MINI_W, MINI_H);
 
   for (const stroke of strokes) {
-    if (!stroke.points || stroke.points.length === 0) continue;
-
-    if (stroke.points.length === 1) {
-      ctx.fillStyle = stroke.color;
-      ctx.beginPath();
-      ctx.arc(
-        stroke.points[0].x * scaleX,
-        stroke.points[0].y * scaleY,
-        (stroke.lineWidth / 2) * Math.min(scaleX, scaleY),
-        0, Math.PI * 2
-      );
-      ctx.fill();
-      continue;
+    if (stroke.type === 'fill') {
+      Canvas.replayFill(ctx, stroke, scaleX, scaleY, MINI_W, MINI_H);
+    } else {
+      Canvas.drawSmoothStroke(ctx, stroke, scaleX, scaleY);
     }
-
-    ctx.beginPath();
-    ctx.moveTo(stroke.points[0].x * scaleX, stroke.points[0].y * scaleY);
-    for (let i = 1; i < stroke.points.length; i++) {
-      ctx.lineTo(stroke.points[i].x * scaleX, stroke.points[i].y * scaleY);
-    }
-    ctx.strokeStyle = stroke.color;
-    ctx.lineWidth = stroke.lineWidth * Math.min(scaleX, scaleY);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
   }
 }
 
@@ -64,57 +45,51 @@ function MiniCanvas({ strokes }) {
   );
 }
 
-function Voting({ drawings, socketId }) {
+function Voting({ drawings, socketId, yourAnonId }) {
   const [votedFor, setVotedFor] = useState(null);
   const [voteError, setVoteError] = useState('');
 
-  const handleVote = useCallback((targetId) => {
+  const handleVote = useCallback((anonId) => {
     if (votedFor) return;
-    if (targetId === socketId) return;
+    if (anonId === yourAnonId) return;
 
-    socket.emit('vote', { targetSocketId: targetId }, (response) => {
+    socket.emit('vote', { anonId }, (response) => {
       if (response.success) {
-        setVotedFor(targetId);
+        setVotedFor(anonId);
         setVoteError('');
       } else {
         setVoteError(response.error);
       }
     });
-  }, [votedFor, socketId]);
+  }, [votedFor, yourAnonId]);
 
   const entries = Object.entries(drawings);
 
   return (
     <div className="voting">
       <h2>Vote for the best drawing!</h2>
+      <p className="voting-hint">Drawings are anonymous — vote for your favorite!</p>
       {voteError && <p className="vote-error">{voteError}</p>}
       {votedFor && <p className="voted-msg">Vote cast!</p>}
 
       <div className="drawings-grid">
-        {entries.map(([id, { username, avatar, strokes }]) => {
-          const isSelf = id === socketId;
-          const isVoted = votedFor === id;
+        {entries.map(([anonId, { label, strokes }]) => {
+          const isSelf = anonId === yourAnonId;
+          const isVoted = votedFor === anonId;
 
           return (
             <div
-              key={id}
+              key={anonId}
               className={`drawing-card ${isVoted ? 'voted' : ''} ${isSelf ? 'self' : ''}`}
             >
               <MiniCanvas strokes={strokes} />
               <div className="drawing-info">
-                <span className="drawing-author">
-                  <span
-                    className="voting-avatar"
-                    style={{ backgroundColor: avatar?.color || '#444' }}
-                  >
-                    {avatar?.emoji || ''}
-                  </span>
-                  {username}{isSelf ? ' (You)' : ''}
-                </span>
+                <span className="drawing-label">{label}</span>
+                {isSelf && <span className="self-badge">(Yours)</span>}
                 {!isSelf && !votedFor && (
                   <button
                     className="vote-btn"
-                    onClick={() => handleVote(id)}
+                    onClick={() => handleVote(anonId)}
                   >
                     Vote
                   </button>

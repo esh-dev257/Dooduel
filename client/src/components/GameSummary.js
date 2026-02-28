@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
+import Canvas from './Canvas';
 import './GameSummary.css';
 
 const MINI_W = 280;
@@ -15,6 +16,7 @@ const ACHIEVEMENT_ICONS = {
   target: '\u{1F3AF}'
 };
 
+// Replay strokes using shared Canvas utilities (supports fill, erase, bezier)
 function replayStrokes(canvas, strokes, w, h) {
   if (!canvas || !strokes) return;
 
@@ -26,31 +28,11 @@ function replayStrokes(canvas, strokes, w, h) {
   ctx.fillRect(0, 0, w, h);
 
   for (const stroke of strokes) {
-    if (!stroke.points || stroke.points.length === 0) continue;
-
-    if (stroke.points.length === 1) {
-      ctx.fillStyle = stroke.color;
-      ctx.beginPath();
-      ctx.arc(
-        stroke.points[0].x * scaleX,
-        stroke.points[0].y * scaleY,
-        (stroke.lineWidth / 2) * Math.min(scaleX, scaleY),
-        0, Math.PI * 2
-      );
-      ctx.fill();
-      continue;
+    if (stroke.type === 'fill') {
+      Canvas.replayFill(ctx, stroke, scaleX, scaleY, w, h);
+    } else {
+      Canvas.drawSmoothStroke(ctx, stroke, scaleX, scaleY);
     }
-
-    ctx.beginPath();
-    ctx.moveTo(stroke.points[0].x * scaleX, stroke.points[0].y * scaleY);
-    for (let i = 1; i < stroke.points.length; i++) {
-      ctx.lineTo(stroke.points[i].x * scaleX, stroke.points[i].y * scaleY);
-    }
-    ctx.strokeStyle = stroke.color;
-    ctx.lineWidth = stroke.lineWidth * Math.min(scaleX, scaleY);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
   }
 }
 

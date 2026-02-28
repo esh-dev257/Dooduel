@@ -1,16 +1,51 @@
 const {
   joinRoom,
   leaveRoom,
+  disconnectPlayer,
   getRoomState,
   getRoom,
   storeStroke,
+  storeFillAction,
   clearPlayerDrawing,
-  castVote,
+  castAnonVote,
   clearRoomTimer,
   getGameSummary,
-  resetGame
+  resetGame,
+  addChatMessage
 } = require('./roomManager');
-const { startGame } = require('./gameLoop');
+const { startGame, advanceToResults } = require('./gameLoop');
+
+// Per-socket rate limiting
+const rateLimits = new Map();
+
+function getRateLimit(socketId) {
+  if (!rateLimits.has(socketId)) {
+    rateLimits.set(socketId, { drawCount: 0, chatCount: 0, lastReset: Date.now() });
+  }
+  const rl = rateLimits.get(socketId);
+  const now = Date.now();
+  // Reset counters every second
+  if (now - rl.lastReset >= 1000) {
+    rl.drawCount = 0;
+    rl.chatCount = 0;
+    rl.lastReset = now;
+  }
+  return rl;
+}
+
+function checkDrawRate(socketId) {
+  const rl = getRateLimit(socketId);
+  if (rl.drawCount >= 60) return false; // Max 60 draw events/sec
+  rl.drawCount++;
+  return true;
+}
+
+function checkChatRate(socketId) {
+  const rl = getRateLimit(socketId);
+  if (rl.chatCount >= 1) return false; // Max 1 chat message/sec
+  rl.chatCount++;
+  return true;
+}
 
 function registerHandlers(io, socket) {
 
@@ -37,11 +72,26 @@ function registerHandlers(io, socket) {
     socket.data.roomId = roomId;
     socket.data.username = username;
 
-    joinRoom(roomId, socket.id, username);
+    const { room, error } = joinRoom(roomId, socket.id, username);
+    if (error) {
+      socket.leave(roomId);
+      socket.data.roomId = null;
+      return callback?.({ error });
+    }
+
     const state = getRoomState(roomId);
 
     // Notify all players in the room
     io.to(roomId).emit('roomUpdate', state);
+
+    // Emit join notification
+    const joinedPlayer = room.players[socket.id];
+    io.to(roomId).emit('playerJoined', {
+      username: username,
+      avatar: joinedPlayer?.avatar || null,
+      socketId: socket.id
+    });
+
     callback?.({ success: true, roomState: state, socketId: socket.id });
   });
 
@@ -63,10 +113,11 @@ function registerHandlers(io, socket) {
     startGame(io, roomId);
   });
 
-  // --- Drawing stroke ---
+  // --- Drawing stroke (final, stores on server) ---
   socket.on('drawStroke', (stroke) => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
+    if (!checkDrawRate(socket.id)) return;
 
     const room = getRoom(roomId);
     if (!room || room.gameState !== 'DRAWING') return;
@@ -75,6 +126,20 @@ function registerHandlers(io, socket) {
     if (!stroke?.points?.length || !stroke.color || !stroke.lineWidth) return;
 
     storeStroke(roomId, socket.id, stroke);
+  });
+
+
+  // --- Flood fill action ---
+  socket.on('fillAction', (action) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return;
+
+    const room = getRoom(roomId);
+    if (!room || room.gameState !== 'DRAWING') return;
+
+    if (typeof action?.x !== 'number' || typeof action?.y !== 'number' || !action?.color) return;
+
+    storeFillAction(roomId, socket.id, action);
   });
 
   // --- Clear canvas ---
@@ -88,12 +153,12 @@ function registerHandlers(io, socket) {
     clearPlayerDrawing(roomId, socket.id);
   });
 
-  // --- Vote ---
-  socket.on('vote', ({ targetSocketId }, callback) => {
+  // --- Vote (anonymous) ---
+  socket.on('vote', ({ anonId }, callback) => {
     const roomId = socket.data.roomId;
     if (!roomId) return callback?.({ success: false, error: 'Not in a room' });
 
-    const result = castVote(roomId, socket.id, targetSocketId);
+    const result = castAnonVote(roomId, socket.id, anonId);
     callback?.(result);
 
     if (result.success) {
@@ -102,8 +167,31 @@ function registerHandlers(io, socket) {
         const totalPlayers = Object.keys(room.players).length;
         const totalVotes = Object.keys(room.votes).length;
         io.to(roomId).emit('voteUpdate', { totalVotes, totalPlayers });
+
+        // All players voted — advance early
+        if (totalVotes >= totalPlayers) {
+          advanceToResults(io, roomId);
+        }
       }
     }
+  });
+
+  // --- Chat message ---
+  socket.on('chatMessage', ({ text }, callback) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return callback?.({ error: 'Not in a room' });
+
+    if (!text?.trim()) return callback?.({ error: 'Empty message' });
+
+    if (!checkChatRate(socket.id)) {
+      return callback?.({ error: 'Slow down! 1 message per second.' });
+    }
+
+    const message = addChatMessage(roomId, socket.id, text);
+    if (!message) return callback?.({ error: 'Failed to send' });
+
+    io.to(roomId).emit('chatMessage', message);
+    callback?.({ success: true });
   });
 
   // --- End Game (host only) ---
@@ -127,15 +215,31 @@ function registerHandlers(io, socket) {
     io.to(roomId).emit('roomUpdate', getRoomState(roomId));
   });
 
-  // --- Disconnect ---
+  // --- Disconnect (move to reconnection pool) ---
   socket.on('disconnect', () => {
     const roomId = socket.data.roomId;
     if (!roomId) return;
 
-    const room = leaveRoom(roomId, socket.id);
+    // Clean up rate limits
+    rateLimits.delete(socket.id);
+
+    // Capture player info before disconnect removes them
+    const roomBefore = getRoom(roomId);
+    const leavingPlayer = roomBefore?.players[socket.id];
+    const leavingUsername = leavingPlayer?.username || socket.data.username || 'A player';
+    const leavingAvatar = leavingPlayer?.avatar || null;
+
+    const room = disconnectPlayer(roomId, socket.id);
     if (!room) return; // room was deleted (empty)
 
     io.to(roomId).emit('roomUpdate', getRoomState(roomId));
+
+    // Emit leave notification
+    io.to(roomId).emit('playerLeft', {
+      username: leavingUsername,
+      avatar: leavingAvatar,
+      socketId: socket.id
+    });
 
     // If game is active but fewer than 2 players remain, reset to WAITING
     const playerCount = Object.keys(room.players).length;
@@ -151,6 +255,13 @@ function registerHandlers(io, socket) {
         players: room.players,
         host: room.host
       });
+    }
+
+    // Broadcast updated vote count if in voting phase
+    if (room.gameState === 'VOTING') {
+      const totalPlayers = Object.keys(room.players).length;
+      const totalVotes = Object.keys(room.votes).length;
+      io.to(roomId).emit('voteUpdate', { totalVotes, totalPlayers });
     }
   });
 }
