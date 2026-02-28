@@ -2,17 +2,26 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+}
+
+/* Canvas area with sunken border like MS Paint */
+.canvas-wrapper {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  border: var(--border-sunken);
+  background: var(--bg-window-dark);
+  padding: 2px;
 }
 
 .draw-canvas {
-  border: 2px solid #333;
-  border-radius: 8px;
   background: #fff;
   cursor: crosshair;
   max-width: 100%;
   height: auto;
   touch-action: none;
+  display: block;
 }
 
 .draw-canvas.disabled {
@@ -21,98 +30,217 @@
   pointer-events: none;
 }
 
+.draw-canvas.eraser-cursor {
+  cursor: cell;
+}
+
+.draw-canvas.fill-cursor {
+  cursor: pointer;
+}
+
+/* === MS Paint Toolbar === */
 .canvas-tools {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
-  background: #1a1a2e;
-  padding: 10px 16px;
-  border-radius: 12px;
-  border: 1px solid #16213e;
+  background: var(--bg-window);
+  padding: 6px 10px;
+  border: var(--border-raised);
+  max-width: 100%;
 }
 
+/* Tool group (Pen/Eraser/Fill) */
+.tool-group {
+  display: flex;
+  gap: 2px;
+  border-right: 1px solid var(--border-dark);
+  padding-right: 8px;
+}
+
+/* Color palette - MS Paint style */
 .color-palette {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   flex-wrap: wrap;
+  align-items: center;
+  border: var(--border-sunken);
+  padding: 4px;
+  background: var(--bg-window);
+  max-width: 220px;
 }
 
 .color-swatch {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  border: 2px solid transparent;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border-darker);
   outline: none;
-  transition: transform 0.1s, border-color 0.15s;
+  transition: transform var(--transition-fast);
+  cursor: pointer;
+  padding: 0;
+  border-radius: 0;
 }
 
 .color-swatch:hover {
-  transform: scale(1.15);
+  transform: scale(1.2);
+  z-index: 1;
 }
 
 .color-swatch.active {
-  border-color: #e94560;
-  transform: scale(1.15);
-  box-shadow: 0 0 6px rgba(233, 69, 96, 0.5);
+  border: 2px solid var(--text-dark);
+  transform: scale(1.2);
+  box-shadow: 0 0 0 1px var(--accent-pink);
+  z-index: 2;
 }
 
+.color-picker-input {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border-darker);
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.color-picker-input::-webkit-color-swatch-wrapper {
+  padding: 1px;
+}
+
+.color-picker-input::-webkit-color-swatch {
+  border: none;
+}
+
+/* Size picker */
 .size-picker {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  border: var(--border-sunken);
+  padding: 4px;
+  background: var(--bg-window);
 }
 
 .size-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 6px;
-  border: 2px solid transparent;
-  background: #0f0e17;
+  width: 30px;
+  height: 30px;
+  border: 2px outset #dfdfdf;
+  background: var(--bg-window);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.15s;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.size-btn:hover {
+  background: #d8d8d8;
 }
 
 .size-btn.active {
-  border-color: #e94560;
+  border: 2px inset #a0a0a0;
+  background: #b0b0b0;
 }
 
 .size-dot {
   display: block;
   border-radius: 50%;
-  background: #e8e8e8;
+  background: var(--text-dark);
 }
 
+/* Actions (Undo / Clear) */
 .canvas-actions {
   display: flex;
-  gap: 6px;
+  gap: 4px;
+  border-left: 1px solid var(--border-dark);
+  padding-left: 8px;
 }
 
+/* Classic raised toolbar button */
 .tool-btn {
-  padding: 6px 16px;
-  border-radius: 6px;
-  border: 1px solid #333;
-  background: #0f0e17;
-  color: #ccc;
-  font-size: 0.85rem;
+  padding: 4px 12px;
+  border: 2px outset #dfdfdf;
+  background: var(--bg-window);
+  color: var(--text-dark);
+  font-size: 0.8rem;
   font-weight: 600;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  border-radius: 0;
 }
 
 .tool-btn:hover {
-  border-color: #666;
-  color: #fff;
+  background: #d8d8d8;
+}
+
+/* Active/pressed state - sunken */
+.tool-btn.active {
+  border: 2px inset #a0a0a0;
+  background: #b0b0b0;
+  color: var(--text-dark);
 }
 
 .tool-btn.danger {
-  border-color: #e94560;
-  color: #e94560;
+  color: var(--color-danger);
 }
 
 .tool-btn.danger:hover {
-  background: #e94560;
-  color: #fff;
+  background: var(--color-danger);
+  color: var(--text-light);
+  border: 2px inset #c62828;
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+  .canvas-tools {
+    gap: 6px;
+    padding: 4px 6px;
+  }
+
+  .tool-group {
+    border-right: none;
+    padding-right: 0;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .canvas-actions {
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .color-palette {
+    max-width: 180px;
+  }
+
+  .color-swatch {
+    width: 18px;
+    height: 18px;
+  }
+
+  .size-btn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .tool-btn {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .color-palette {
+    max-width: 150px;
+  }
+
+  .color-swatch {
+    width: 16px;
+    height: 16px;
+  }
+
+  .color-picker-input {
+    width: 16px;
+    height: 16px;
+  }
 }
