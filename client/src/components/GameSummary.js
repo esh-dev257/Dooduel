@@ -100,7 +100,7 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
     ctx.fillStyle = '#e94560';
     ctx.font = 'bold 28px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Scribll - Best Drawings', totalW / 2, 40);
+    ctx.fillText('Dooduel - Best Drawings', totalW / 2, 40);
 
     canvases.forEach((c, i) => {
       const col = i % cols;
@@ -127,12 +127,12 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
 
     try {
       const blob = await new Promise(resolve => compositeCanvas.toBlob(resolve, 'image/png'));
-      const file = new File([blob], 'scribll-collage.png', { type: 'image/png' });
+      const file = new File([blob], 'dooduel-collage.png', { type: 'image/png' });
 
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          title: 'Scribll Game Results',
-          text: 'Check out our Scribll drawings!',
+          title: 'Dooduel Game Results',
+          text: 'Check out our Dooduel drawings!',
           files: [file]
         });
         setShareStatus('Shared!');
@@ -140,7 +140,7 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'scribll-collage.png';
+        a.download = 'dooduel-collage.png';
         a.click();
         URL.revokeObjectURL(url);
         setShareStatus('Downloaded!');
@@ -195,7 +195,7 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
     ctx.fillStyle = '#e94560';
     ctx.font = 'bold 36px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Scribll', CARD_W / 2, 55);
+    ctx.fillText('Dooduel', CARD_W / 2, 55);
 
     // Avatar circle
     const avatarCX = CARD_W / 2;
@@ -298,12 +298,12 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
 
     try {
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-      const file = new File([blob], 'scribll-achievement.png', { type: 'image/png' });
+      const file = new File([blob], 'dooduel-achievement.png', { type: 'image/png' });
 
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          title: 'My Scribll Achievement',
-          text: 'I played Scribll! Check out my results!',
+          title: 'My Dooduel Achievement',
+          text: 'I played Dooduel! Check out my results!',
           files: [file]
         });
         setCardStatus('Shared!');
@@ -311,7 +311,7 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'scribll-achievement.png';
+        a.download = 'dooduel-achievement.png';
         a.click();
         URL.revokeObjectURL(url);
         setCardStatus('Downloaded!');

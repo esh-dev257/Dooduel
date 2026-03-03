@@ -203,8 +203,8 @@ function Room({ initialState, socketId, onLeave }) {
   const handleInvite = useCallback(() => {
     const url = `${window.location.origin}?room=${encodeURIComponent(roomId)}`;
     const shareData = {
-      title: 'Scribll - Drawing Game',
-      text: `Join my Scribll room! Room code: ${roomId}`,
+      title: 'Dooduel - Drawing Game',
+      text: `Join my Dooduel room! Room code: ${roomId}`,
       url
     };
 
