@@ -1,71 +1,52 @@
-.voting {
-  text-align: center;
-  width: 100%;
-}
+/* === VOTING — Pixel Art Theme === */
+.voting { text-align: center; width: 100%; }
 
 .voting h2 {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--text-dark);
-  margin-bottom: 4px;
+  font-size: 0.65rem;
+  color: var(--px-gold);
+  margin-bottom: 6px;
+  letter-spacing: 1px;
 }
 
 .voting-hint {
   color: var(--text-gray);
-  font-size: 0.85rem;
+  font-size: 0.4rem;
   margin-bottom: 16px;
+  line-height: 2;
 }
 
-.vote-error {
-  color: var(--color-danger);
-  font-size: 0.85rem;
-  margin-bottom: 8px;
-}
+.vote-error { color: var(--px-red); font-size: 0.42rem; margin-bottom: 8px; line-height: 2; }
+.voted-msg  { color: var(--px-green); font-size: 0.45rem; margin-bottom: 12px; letter-spacing: 1px; }
 
-.voted-msg {
-  color: var(--color-success);
-  font-weight: 700;
-  margin-bottom: 12px;
-}
-
-/* CSS Grid for clean separation — no overlap */
 .drawings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
   justify-items: center;
   width: 100%;
 }
 
-/* Each drawing card is a retro window */
 .drawing-card {
-  background: var(--bg-window);
-  border: var(--border-raised);
+  background: #1a0030;
+  border: 3px solid var(--px-purple);
   width: 100%;
-  max-width: 400px;
-  box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
-  transition: transform var(--transition-normal);
+  max-width: 380px;
+  transition: transform 0.15s;
 }
 
 .drawing-card:hover:not(.self) {
-  transform: translateY(-2px);
-  box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.25);
+  transform: translateY(-3px);
+  border-color: var(--px-pink);
 }
 
-.drawing-card.voted {
-  border: 2px solid var(--color-success);
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
-}
-
-.drawing-card.self {
-  opacity: 0.65;
-}
+.drawing-card.voted { border-color: var(--px-green); }
+.drawing-card.self  { opacity: 0.55; }
 
 .mini-canvas {
   display: block;
   max-width: 100%;
   height: auto;
-  border: var(--border-sunken);
+  border: 2px solid #330055;
   margin: 8px;
 }
 
@@ -75,65 +56,41 @@
   justify-content: space-between;
   padding: 6px 10px 8px;
   gap: 10px;
-  background: var(--bg-window);
-  border-top: 1px solid var(--border-dark);
+  background: #0d0020;
+  border-top: 2px solid #330055;
 }
 
-/* Label styled like a title bar */
 .drawing-label {
-  font-weight: 700;
-  background: var(--bg-titlebar);
-  color: var(--text-light);
-  padding: 2px 10px;
-  font-size: 0.8rem;
+  font-size: 0.4rem;
+  background: var(--px-purple);
+  color: #fff;
+  padding: 3px 8px;
+  letter-spacing: 1px;
 }
 
-.self-badge {
-  font-size: 0.75rem;
-  color: var(--text-gray);
-  font-style: italic;
-}
+.self-badge { font-size: 0.38rem; color: var(--text-gray); }
 
 .vote-btn {
-  background: var(--bg-window);
+  background: #2D0066;
   color: var(--text-dark);
-  border: 2px outset #dfdfdf;
-  padding: 6px 18px;
-  font-size: 0.8rem;
-  font-weight: 700;
+  border: 2px solid var(--px-purple);
+  padding: 7px 16px;
+  font-size: 0.42rem;
+  font-family: var(--font-main);
   cursor: pointer;
-  transition: all var(--transition-fast);
-  border-radius: 0;
+  letter-spacing: 1px;
 }
 
-.vote-btn:hover {
-  background: #d8d8d8;
-}
+.vote-btn:hover  { background: var(--px-purple); color: #fff; }
+.vote-btn:active { border-color: var(--px-gold); }
 
-.vote-btn:active {
-  border: 2px inset #a0a0a0;
-}
-
-.voted-badge {
-  color: var(--color-success);
-  font-weight: 700;
-  font-size: 0.85rem;
-}
+.voted-badge { color: var(--px-green); font-size: 0.45rem; letter-spacing: 1px; }
 
 @media (max-width: 768px) {
-  .drawings-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 12px;
-  }
+  .drawings-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 }
 
 @media (max-width: 480px) {
-  .drawings-grid {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .drawing-card {
-    max-width: 100%;
-  }
+  .drawings-grid { grid-template-columns: 1fr; gap: 10px; }
+  .drawing-card { max-width: 100%; }
 }

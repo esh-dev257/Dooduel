@@ -1,54 +1,64 @@
-/* === Retro MS Paint / Win98 Theme Variables === */
+/* === Pixel Art Theme Variables (replaces Win98 teal) === */
 :root {
-  /* Desktop & Backgrounds */
-  --bg-desktop: #008080;
-  --bg-window: #c0c0c0;
-  --bg-window-dark: #a0a0a0;
-  --bg-titlebar: linear-gradient(90deg, #000080, #1084d0);
-  --bg-titlebar-inactive: linear-gradient(90deg, #808080, #b0b0b0);
-  --bg-content: #ffffff;
-  --bg-dark: #0a0a0a;
+  /* Backgrounds */
+  --bg-desktop:   #3D0085;
+  --bg-window:    #1a0030;
+  --bg-window-dark: #0d0020;
+  --bg-content:   #2D0066;
+  --bg-titlebar:  linear-gradient(90deg, #1a0030, #6600cc);
+  --bg-titlebar-inactive: linear-gradient(90deg, #1a0030, #330055);
 
-  /* 3D Border Colors */
-  --border-light: #ffffff;
-  --border-dark: #808080;
-  --border-darker: #404040;
-  --border-raised: 2px outset #dfdfdf;
-  --border-sunken: 2px inset #a0a0a0;
+  /* Borders */
+  --border-light:   #9933FF;
+  --border-dark:    #330055;
+  --border-darker:  #1a0030;
+  --border-raised:  3px solid #6600cc;
+  --border-sunken:  3px solid #330055;
 
-  /* Accent Colors (vibrant & fun) */
-  --accent-pink: #ff6b9d;
-  --accent-blue: #4fc3f7;
-  --accent-yellow: #ffd54f;
-  --accent-green: #81c784;
-  --accent-red: #e57373;
-  --accent-purple: #b39ddb;
-  --accent-orange: #ffb74d;
-  --accent-navy: #000080;
+  /* Brand colours */
+  --px-gold:        #FFD700;
+  --px-gold-dark:   #AA8800;
+  --px-green:       #00FF88;
+  --px-green-dark:  #00AA44;
+  --px-pink:        #FF66CC;
+  --px-red:         #FF4444;
+  --px-blue:        #44AAFF;
+  --px-purple:      #6600cc;
+  --px-purple-light:#9933FF;
+
+  /* Accent aliases (used in component CSS) */
+  --accent-pink:    #FF66CC;
+  --accent-blue:    #44AAFF;
+  --accent-yellow:  #FFD700;
+  --accent-green:   #00FF88;
+  --accent-red:     #FF4444;
+  --accent-purple:  #9933FF;
+  --accent-orange:  #FF8800;
+  --accent-navy:    #6600cc;
 
   /* Text */
-  --text-dark: #000000;
+  --text-dark:  #BB88FF;
   --text-light: #ffffff;
-  --text-gray: #808080;
-  --text-link: #0000ff;
+  --text-gray:  #6633AA;
+  --text-link:  #FF66CC;
 
   /* Functional */
-  --color-success: #4caf50;
-  --color-danger: #f44336;
-  --color-warning: #ff9800;
-  --color-info: #2196f3;
+  --color-success: #00FF88;
+  --color-danger:  #FF4444;
+  --color-warning: #FFD700;
+  --color-info:    #44AAFF;
 
-  /* Typography */
-  --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  --font-mono: 'Courier New', Courier, monospace;
+  /* Typography — Press Start 2P for all game UI */
+  --font-main: 'Press Start 2P', monospace;
+  --font-mono: 'Press Start 2P', monospace;
 
-  /* Spacing & Radius */
+  /* Spacing */
   --radius-sm: 0px;
-  --radius-md: 2px;
-  --radius-lg: 4px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
 
   /* Transitions */
-  --transition-fast: 0.1s ease;
+  --transition-fast:   0.1s ease;
   --transition-normal: 0.2s ease;
 }
 
@@ -57,6 +67,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  image-rendering: pixelated;
 }
 
 body {
@@ -69,7 +80,11 @@ body {
 
 button {
   cursor: pointer;
-  font-family: inherit;
+  font-family: var(--font-main);
+}
+
+input, textarea, select {
+  font-family: var(--font-main);
 }
 
 /* === App Layout === */
@@ -79,25 +94,36 @@ button {
   min-height: 100vh;
 }
 
-/* === Header - Windows Taskbar Style === */
+/* === Header — pixel topbar === */
 .app-header {
-  background: var(--bg-window);
-  padding: 4px 12px;
-  border-bottom: var(--border-raised);
+  background: #1a0030;
+  padding: 0 16px;
+  height: 44px;
+  border-bottom: 3px solid var(--px-purple);
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .app-logo {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--text-dark);
-  text-shadow:
-    2px 2px 0px var(--accent-pink),
-    -1px -1px 0px var(--accent-blue);
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--px-gold);
   letter-spacing: 2px;
   user-select: none;
+  text-shadow: 0 0 12px var(--px-gold);
+}
+
+/* Pixel-art "live" chip beside logo */
+.app-header::after {
+  content: 'LIVE';
+  font-size: 0.4rem;
+  color: var(--px-green);
+  border: 2px solid var(--px-green);
+  background: #002211;
+  padding: 3px 6px;
+  letter-spacing: 1px;
 }
 
 /* === Main Content === */
@@ -105,3 +131,74 @@ button {
   flex: 1;
   display: flex;
 }
+
+/* === Loading screen (shown while socket connects) === */
+.loading-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #1a0030;
+  gap: 20px;
+  padding: 40px 20px;
+}
+
+.loading-logo {
+  font-size: 1.4rem;
+  color: var(--px-gold);
+  letter-spacing: 4px;
+  animation: logoPulse 1.5s ease-in-out infinite alternate;
+}
+
+.loading-logo span { color: var(--px-pink); }
+
+@keyframes logoPulse {
+  from { text-shadow: 0 0 8px var(--px-gold), 0 0 20px var(--px-purple); }
+  to   { text-shadow: 0 0 24px var(--px-gold), 0 0 50px var(--px-purple-light); }
+}
+
+.loading-bar-track {
+  width: 260px;
+  height: 14px;
+  background: #000;
+  border: 3px solid var(--px-purple);
+  overflow: hidden;
+}
+
+.loading-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--px-purple), var(--px-pink), var(--px-gold));
+  animation: loadBar 2.5s ease forwards;
+  width: 0;
+}
+
+@keyframes loadBar {
+  0%  { width: 0% }
+  30% { width: 40% }
+  60% { width: 70% }
+  85% { width: 90% }
+  100%{ width: 100% }
+}
+
+.loading-status {
+  font-size: 0.45rem;
+  color: var(--text-dark);
+  letter-spacing: 1px;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink { 50% { opacity: 0.4 } }
+
+.loading-tip {
+  font-size: 0.4rem;
+  color: var(--text-gray);
+  text-align: center;
+  border: 2px solid #330055;
+  padding: 10px 16px;
+  background: #0d0020;
+  max-width: 280px;
+  line-height: 2;
+}
+
+.loading-tip strong { color: var(--px-gold); }

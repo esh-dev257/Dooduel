@@ -387,28 +387,12 @@ function Canvas({ disabled }) {
       {!disabled && (
         <div className="canvas-tools">
           <div className="tool-group">
-            <button
-              className={`tool-btn ${activeTool === 'pen' ? 'active' : ''}`}
-              onClick={() => handleToolChange('pen')}
-              title="Pen"
-            >
-              Pen
-            </button>
-            <button
-              className={`tool-btn ${activeTool === 'eraser' ? 'active' : ''}`}
-              onClick={() => handleToolChange('eraser')}
-              title="Eraser"
-            >
-              Eraser
-            </button>
-            <button
-              className={`tool-btn ${activeTool === 'fill' ? 'active' : ''}`}
-              onClick={() => handleToolChange('fill')}
-              title="Fill"
-            >
-              Fill
-            </button>
+            <button className={`tool-btn ${activeTool === 'pen' ? 'active' : ''}`} onClick={() => handleToolChange('pen')}>Pen</button>
+            <button className={`tool-btn ${activeTool === 'eraser' ? 'active' : ''}`} onClick={() => handleToolChange('eraser')}>Eraser</button>
+            <button className={`tool-btn ${activeTool === 'fill' ? 'active' : ''}`} onClick={() => handleToolChange('fill')}>Fill</button>
           </div>
+
+          <div className="toolbar-divider" />
 
           <div className="color-palette">
             {COLORS.map((color) => (
@@ -420,33 +404,20 @@ function Canvas({ disabled }) {
                 title={color}
               />
             ))}
-            <input
-              type="color"
-              className="color-picker-input"
-              value={selectedColor}
-              onChange={handleCustomColor}
-              title="Custom color"
-            />
+            <input type="color" className="color-picker-input" value={selectedColor} onChange={handleCustomColor} title="Custom color" />
           </div>
+
+          <div className="toolbar-divider" />
 
           <div className="size-picker">
             {SIZES.map((size) => (
-              <button
-                key={size}
-                className={`size-btn ${selectedSize === size ? 'active' : ''}`}
-                onClick={() => handleSizeChange(size)}
-                title={`${size}px`}
-              >
-                <span
-                  className="size-dot"
-                  style={{
-                    width: Math.min(size, 20),
-                    height: Math.min(size, 20)
-                  }}
-                />
+              <button key={size} className={`size-btn ${selectedSize === size ? 'active' : ''}`} onClick={() => handleSizeChange(size)} title={`${size}px`}>
+                <span className="size-dot" style={{ width: Math.min(size, 20), height: Math.min(size, 20) }} />
               </button>
             ))}
           </div>
+
+          <div className="toolbar-divider" />
 
           <div className="canvas-actions">
             <button className="tool-btn" onClick={handleUndo}>Undo</button>

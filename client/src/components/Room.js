@@ -9,6 +9,10 @@ import GameSummary from './GameSummary';
 import Chat from './Chat';
 import './Room.css';
 
+const REACTION_EMOJIS = ['😂', '🔥', '💀', '🤯', '👀', '😍', '🤌', '💯'];
+
+
+
 function Room({ initialState, socketId, onLeave }) {
   const [players, setPlayers] = useState(initialState.players || {});
   const [host, setHost] = useState(initialState.host);
@@ -28,13 +32,27 @@ function Room({ initialState, socketId, onLeave }) {
   const [error, setError] = useState('');
   const [gameSummary, setGameSummary] = useState(null);
   const [inviteCopied, setInviteCopied] = useState(false);
-  const [phaseKey, setPhaseKey] = useState(0); // For transition animation
+  const [phaseKey, setPhaseKey] = useState(0);
   const [toasts, setToasts] = useState([]);
+  const [disconnected, setDisconnected] = useState(false);
+  const [floatingReactions, setFloatingReactions] = useState([]);
 
   const prevGameState = useRef(gameState);
 
   const isHost = host === socketId;
   const roomId = initialState.roomId || new URLSearchParams(window.location.search).get('room') || '';
+
+  // Reconnect detection
+  useEffect(() => {
+    const onDisconnect = () => setDisconnected(true);
+    const onConnect = () => setDisconnected(false);
+    socket.on('disconnect', onDisconnect);
+    socket.on('connect', onConnect);
+    return () => {
+      socket.off('disconnect', onDisconnect);
+      socket.off('connect', onConnect);
+    };
+  }, []);
 
   // Socket event listeners
   useEffect(() => {
@@ -198,6 +216,16 @@ function Room({ initialState, socketId, onLeave }) {
     setGameSummary(null);
     setGameState('WAITING');
     setRound(0);
+    setDifficulty('');
+  }, []);
+
+  const addReaction = useCallback((emoji) => {
+    const id = Date.now() + Math.random();
+    const x = 10 + Math.random() * 80;
+    setFloatingReactions(prev => [...prev, { id, emoji, x }]);
+    setTimeout(() => {
+      setFloatingReactions(prev => prev.filter(r => r.id !== id));
+    }, 2000);
   }, []);
 
   const handleInvite = useCallback(() => {
@@ -307,6 +335,20 @@ function Room({ initialState, socketId, onLeave }) {
             <div className="waiting-screen">
               <h2>Waiting for players...</h2>
               <p className="player-count">{playerCount} player{playerCount !== 1 ? 's' : ''} in room</p>
+
+              {/* Game mode (host only) */}
+              {isHost && (
+                <>
+                  <div className="lobby-section-label">GAME MODE</div>
+                  <div className="mode-selector">
+                    <div className="mode-btn active">
+                      <span className="mode-name">CLASSIC</span>
+                      <span className="mode-desc">3 rounds, timed</span>
+                    </div>
+                  </div>
+                </>
+              )}
+
               <div className="round-info">
                 <span className="round-info-label">3 Rounds</span>
                 <span className="round-info-detail">Easy (1:30) &rarr; Medium (1:00) &rarr; Hard (0:45)</span>
@@ -377,6 +419,27 @@ function Room({ initialState, socketId, onLeave }) {
             )}
             <span className="toast-message">{toast.message}</span>
           </div>
+        ))}
+      </div>
+
+      {/* Disconnected banner — Fix: No graceful WebSocket reconnect UI */}
+      {disconnected && (
+        <div className="reconnect-banner">
+          <span className="reconnect-dot" />
+          RECONNECTING... DO NOT CLOSE THIS TAB
+        </div>
+      )}
+
+      {/* Floating emoji reactions */}
+      <div className="floating-reactions-layer" aria-hidden="true">
+        {floatingReactions.map(r => (
+          <span
+            key={r.id}
+            className="floating-reaction"
+            style={{ left: `${r.x}%` }}
+          >
+            {r.emoji}
+          </span>
         ))}
       </div>
     </div>
