@@ -72,7 +72,9 @@
 
 body {
   font-family: var(--font-main);
-  background: var(--bg-desktop);
+  background-color: #3D0085;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192'%3E%3Crect x='0' y='0' width='48' height='48' fill='%233D0085'/%3E%3Crect x='48' y='0' width='48' height='48' fill='%235500bb'/%3E%3Crect x='96' y='0' width='48' height='48' fill='%232D0066'/%3E%3Crect x='144' y='0' width='48' height='48' fill='%236600cc'/%3E%3Crect x='0' y='48' width='48' height='48' fill='%236600cc'/%3E%3Crect x='48' y='48' width='48' height='48' fill='%233D0085'/%3E%3Crect x='96' y='48' width='48' height='48' fill='%23440088'/%3E%3Crect x='144' y='48' width='48' height='48' fill='%234A0099'/%3E%3Crect x='0' y='96' width='48' height='48' fill='%234A0099'/%3E%3Crect x='48' y='96' width='48' height='48' fill='%232D0066'/%3E%3Crect x='96' y='96' width='48' height='48' fill='%235500bb'/%3E%3Crect x='144' y='96' width='48' height='48' fill='%233D0085'/%3E%3Crect x='0' y='144' width='48' height='48' fill='%232D0066'/%3E%3Crect x='48' y='144' width='48' height='48' fill='%23440088'/%3E%3Crect x='96' y='144' width='48' height='48' fill='%236600cc'/%3E%3Crect x='144' y='144' width='48' height='48' fill='%235500bb'/%3E%3C/svg%3E");
+  background-size: 192px 192px;
   color: var(--text-dark);
   min-height: 100vh;
   overflow-x: hidden;
@@ -139,7 +141,7 @@ input, textarea, select {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #1a0030;
+  background: transparent;
   gap: 20px;
   padding: 40px 20px;
 }
