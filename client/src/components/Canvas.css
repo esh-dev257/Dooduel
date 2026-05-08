@@ -53,6 +53,18 @@
   overflow-x: hidden;
 }
 
+.toolbar-top-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toolbar-bottom-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .toolbar-divider {
   height: 2px;
   background: #330055;
@@ -164,36 +176,93 @@
 .tool-btn.danger { color: var(--px-red); border-color: var(--px-red); }
 .tool-btn.danger:hover { background: var(--px-red); color: #fff; }
 
-/* === Responsive — stack toolbar below canvas on mobile === */
+/* === Mobile — canvas full width, toolbar below === */
 @media (max-width: 768px) {
-  .canvas-container { flex-direction: column; align-items: stretch; }
+  /* Stack vertically */
+  .canvas-container {
+    flex-direction: column;
+    align-items: stretch;
+    max-height: none;
+  }
 
-  .canvas-tools {
-    flex-direction: row;
-    flex-wrap: wrap;
+  /* Canvas: full width, let aspect-ratio set the height */
+  .canvas-wrapper {
     width: 100%;
-    align-self: auto;
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 800 / 560;
+  }
+
+  .draw-canvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Toolbar: full-width horizontal strip below canvas */
+  .canvas-tools {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    flex-direction: column;
     gap: 6px;
-    padding: 6px 8px;
+    padding: 8px 10px;
+    overflow: visible;
   }
 
   .toolbar-divider { display: none; }
 
-  .tool-group { flex-direction: row; }
-  .canvas-actions { flex-direction: row; }
+  /* Top row: tools + actions side by side */
+  .toolbar-top-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
 
+  /* Bottom row: colors + sizes side by side */
+  .toolbar-bottom-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tool-group {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .canvas-actions {
+    flex-direction: row;
+    gap: 4px;
+  }
+
+  /* Colors: 7-column grid, fills available space */
   .color-palette {
     grid-template-columns: repeat(7, 1fr);
+    flex: 1;
     min-width: 0;
   }
 
-  .size-picker { flex: none; }
+  /* Sizes: horizontal, fixed, don't shrink */
+  .size-picker {
+    flex-direction: row;
+    justify-content: flex-start;
+    flex-shrink: 0;
+    width: auto;
+  }
 
-  .tool-btn { width: auto; padding: 5px 8px; }
+  .tool-btn {
+    width: auto;
+    padding: 5px 10px;
+    font-size: 0.38rem;
+  }
+
+  .color-swatch { width: 100%; aspect-ratio: 1; }
 }
 
 @media (max-width: 480px) {
-  .color-palette { grid-template-columns: repeat(5, 1fr); }
-  .color-swatch { min-width: 14px; }
-  .color-picker-input { min-width: 14px; }
+  .color-palette { grid-template-columns: repeat(7, 1fr); }
+  .tool-btn { padding: 4px 7px; font-size: 0.35rem; }
 }

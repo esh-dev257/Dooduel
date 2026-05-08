@@ -386,42 +386,42 @@ function Canvas({ disabled }) {
       </div>
       {!disabled && (
         <div className="canvas-tools">
-          <div className="tool-group">
-            <button className={`tool-btn ${activeTool === 'pen' ? 'active' : ''}`} onClick={() => handleToolChange('pen')}>Pen</button>
-            <button className={`tool-btn ${activeTool === 'eraser' ? 'active' : ''}`} onClick={() => handleToolChange('eraser')}>Eraser</button>
-            <button className={`tool-btn ${activeTool === 'fill' ? 'active' : ''}`} onClick={() => handleToolChange('fill')}>Fill</button>
+          {/* Row 1 on mobile: tools + actions together */}
+          <div className="toolbar-top-row">
+            <div className="tool-group">
+              <button className={`tool-btn ${activeTool === 'pen' ? 'active' : ''}`} onClick={() => handleToolChange('pen')}>Pen</button>
+              <button className={`tool-btn ${activeTool === 'eraser' ? 'active' : ''}`} onClick={() => handleToolChange('eraser')}>Eraser</button>
+              <button className={`tool-btn ${activeTool === 'fill' ? 'active' : ''}`} onClick={() => handleToolChange('fill')}>Fill</button>
+            </div>
+            <div className="canvas-actions">
+              <button className="tool-btn" onClick={handleUndo}>Undo</button>
+              <button className="tool-btn danger" onClick={handleClear}>Clear</button>
+            </div>
           </div>
 
           <div className="toolbar-divider" />
 
-          <div className="color-palette">
-            {COLORS.map((color) => (
-              <button
-                key={color}
-                className={`color-swatch ${selectedColor === color && activeTool !== 'eraser' ? 'active' : ''}`}
-                style={{ backgroundColor: color }}
-                onClick={() => handleColorChange(color)}
-                title={color}
-              />
-            ))}
-            <input type="color" className="color-picker-input" value={selectedColor} onChange={handleCustomColor} title="Custom color" />
-          </div>
-
-          <div className="toolbar-divider" />
-
-          <div className="size-picker">
-            {SIZES.map((size) => (
-              <button key={size} className={`size-btn ${selectedSize === size ? 'active' : ''}`} onClick={() => handleSizeChange(size)} title={`${size}px`}>
-                <span className="size-dot" style={{ width: Math.min(size, 20), height: Math.min(size, 20) }} />
-              </button>
-            ))}
-          </div>
-
-          <div className="toolbar-divider" />
-
-          <div className="canvas-actions">
-            <button className="tool-btn" onClick={handleUndo}>Undo</button>
-            <button className="tool-btn danger" onClick={handleClear}>Clear</button>
+          {/* Row 2 on mobile: colors + sizes together */}
+          <div className="toolbar-bottom-row">
+            <div className="color-palette">
+              {COLORS.map((color) => (
+                <button
+                  key={color}
+                  className={`color-swatch ${selectedColor === color && activeTool !== 'eraser' ? 'active' : ''}`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => handleColorChange(color)}
+                  title={color}
+                />
+              ))}
+              <input type="color" className="color-picker-input" value={selectedColor} onChange={handleCustomColor} title="Custom color" />
+            </div>
+            <div className="size-picker">
+              {SIZES.map((size) => (
+                <button key={size} className={`size-btn ${selectedSize === size ? 'active' : ''}`} onClick={() => handleSizeChange(size)} title={`${size}px`}>
+                  <span className="size-dot" style={{ width: Math.min(size, 20), height: Math.min(size, 20) }} />
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

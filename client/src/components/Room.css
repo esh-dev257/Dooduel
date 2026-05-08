@@ -663,8 +663,9 @@
     flex-shrink: 0;
   }
 
-  .room-main { padding: 8px 10px 56px; }
+  .room-main { padding: 6px 8px 80px; overflow-y: auto; }
   .room-status { gap: 5px; padding: 4px 8px; }
+  .drawing-screen { overflow: visible; }
 }
 
 @media (max-width: 480px) {
