@@ -1,16 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Background circle -->
-  <circle cx="32" cy="32" r="30" fill="#0f0e17" stroke="#e94560" stroke-width="3"/>
-  <!-- Left pencil (tilted) -->
-  <g transform="rotate(-30 32 32)">
-    <rect x="18" y="12" width="8" height="36" rx="1" fill="#e94560"/>
-    <polygon points="18,48 26,48 22,56" fill="#f5c542"/>
-    <rect x="18" y="12" width="8" height="6" rx="1" fill="#f5c542"/>
-  </g>
-  <!-- Right pencil (tilted) -->
-  <g transform="rotate(30 32 32)">
-    <rect x="38" y="12" width="8" height="36" rx="1" fill="#00d4aa"/>
-    <polygon points="38,48 46,48 42,56" fill="#f5c542"/>
-    <rect x="38" y="12" width="8" height="6" rx="1" fill="#f5c542"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+  <!-- Dark bg -->
+  <rect width="64" height="64" fill="#0d0020"/>
+
+  <!-- Controller body — purple -->
+  <!-- Top curve -->
+  <rect x="16" y="10" width="32" height="4" fill="#6600cc"/>
+  <!-- Main body -->
+  <rect x="8"  y="14" width="48" height="32" fill="#6600cc"/>
+  <!-- Left grip -->
+  <rect x="4"  y="42" width="22" height="12" fill="#6600cc"/>
+  <!-- Right grip -->
+  <rect x="38" y="42" width="22" height="12" fill="#6600cc"/>
+
+  <!-- Body highlight (top edge) -->
+  <rect x="16" y="10" width="32" height="2" fill="#9933FF"/>
+  <rect x="8"  y="14" width="48" height="2" fill="#9933FF"/>
+
+  <!-- D-pad — gold -->
+  <!-- Horizontal -->
+  <rect x="13" y="27" width="16" height="6" fill="#FFD700"/>
+  <!-- Vertical -->
+  <rect x="18" y="22" width="6"  height="16" fill="#FFD700"/>
+  <!-- Center -->
+  <rect x="18" y="27" width="6" height="6" fill="#FFE44D"/>
+
+  <!-- ABXY Buttons -->
+  <!-- Top (Y) — pink -->
+  <rect x="41" y="21" width="6" height="6" fill="#FF66CC"/>
+  <!-- Right (B) — red -->
+  <rect x="47" y="27" width="6" height="6" fill="#FF4444"/>
+  <!-- Bottom (A) — green -->
+  <rect x="41" y="33" width="6" height="6" fill="#00FF88"/>
+  <!-- Left (X) — blue -->
+  <rect x="35" y="27" width="6" height="6" fill="#44AAFF"/>
+
+  <!-- Start / Select — small center buttons -->
+  <rect x="27" y="29" width="5" height="4" fill="#330055"/>
+  <rect x="33" y="29" width="5" height="4" fill="#330055"/>
+
+  <!-- Gold border frame -->
+  <rect x="0"  y="0"  width="64" height="3" fill="#FFD700"/>
+  <rect x="0"  y="61" width="64" height="3" fill="#FFD700"/>
+  <rect x="0"  y="0"  width="3"  height="64" fill="#FFD700"/>
+  <rect x="61" y="0"  width="3"  height="64" fill="#FFD700"/>
 </svg>

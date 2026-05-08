@@ -50,13 +50,18 @@ function checkChatRate(socketId) {
 function registerHandlers(io, socket) {
 
   // --- Join Room ---
-  socket.on('joinRoom', ({ username, roomId }, callback) => {
+  socket.on('joinRoom', ({ username, roomId, avatar }, callback) => {
     if (!username?.trim() || !roomId?.trim()) {
       return callback?.({ error: 'Username and room ID are required' });
     }
 
     username = username.trim().slice(0, 20);
     roomId = roomId.trim().toLowerCase().slice(0, 20);
+
+    // Sanitise avatar from client
+    const clientAvatar = (avatar?.emoji && avatar?.color)
+      ? { emoji: String(avatar.emoji).slice(0, 8), color: String(avatar.color).slice(0, 20) }
+      : null;
 
     // Leave any previous rooms
     const prevRooms = [...socket.rooms].filter(r => r !== socket.id);
@@ -72,7 +77,7 @@ function registerHandlers(io, socket) {
     socket.data.roomId = roomId;
     socket.data.username = username;
 
-    const { room, error } = joinRoom(roomId, socket.id, username);
+    const { room, error } = joinRoom(roomId, socket.id, username, clientAvatar);
     if (error) {
       socket.leave(roomId);
       socket.data.roomId = null;

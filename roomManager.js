@@ -29,7 +29,7 @@ function getRoom(roomId) {
   return rooms[roomId] || null;
 }
 
-function joinRoom(roomId, socketId, username) {
+function joinRoom(roomId, socketId, username, clientAvatar = null) {
   let room = rooms[roomId];
   if (!room) {
     room = createRoom(roomId);
@@ -59,7 +59,7 @@ function joinRoom(roomId, socketId, username) {
     clearTimeout(data.timeout);
     delete room.disconnectedPlayers[oldSocketId];
   } else {
-    avatar = assignAvatar(room.players);
+    avatar = clientAvatar || assignAvatar(room.players);
   }
 
   room.players[socketId] = { username, score, avatar };
