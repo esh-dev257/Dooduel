@@ -1,0 +1,159 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-radius: 0 !important;
+    image-rendering: pixelated;
+  }
+
+  body {
+    background-color: #3B3FA5;
+    background-image: repeating-conic-gradient(#4A4EB5 0% 25%, #3B3FA5 0% 50%);
+    background-size: 20px 20px;
+    font-family: 'Press Start 2P', cursive;
+    margin: 0;
+    padding: 0;
+    color: #FFFFFF;
+    min-height: 100vh;
+    overflow-x: hidden;
+    font-size: 125%;
+  }
+
+  input, button, textarea, select {
+    font-family: 'Press Start 2P', cursive;
+    border-radius: 0 !important;
+  }
+
+  canvas {
+    display: block;
+  }
+}
+
+@layer components {
+  /* ── Cards ─────────────────────────────────────────── */
+  .pixel-card {
+    @apply bg-pixel-panel border-4 border-pixel-border;
+    box-shadow: 4px 4px 0px #000;
+  }
+
+  .pixel-card-light {
+    @apply bg-pixel-card border-4 border-pixel-border;
+    box-shadow: 4px 4px 0px #000;
+  }
+
+  /* ── Buttons ────────────────────────────────────────── */
+  .pixel-btn {
+    @apply bg-pixel-gold border-4 border-pixel-border
+           text-pixel-black font-pixel text-xs
+           px-4 py-2 cursor-pointer uppercase tracking-wide
+           transition-transform duration-75 inline-block;
+    box-shadow: 4px 4px 0px #000;
+  }
+
+  .pixel-btn:hover:not(:disabled) {
+    @apply -translate-y-0.5;
+  }
+
+  .pixel-btn:active:not(:disabled) {
+    @apply translate-x-1 translate-y-1;
+    box-shadow: none !important;
+  }
+
+  .pixel-btn:disabled {
+    @apply opacity-50 cursor-not-allowed translate-x-0 translate-y-0;
+    box-shadow: 4px 4px 0px #000;
+  }
+
+  .pixel-btn-secondary {
+    @apply pixel-btn bg-pixel-bgdark text-pixel-white border-pixel-panelBorder;
+    box-shadow: 4px 4px 0px #000;
+  }
+
+  .pixel-btn-danger {
+    @apply pixel-btn bg-pixel-red text-pixel-white;
+    box-shadow: 4px 4px 0px #8B0000;
+  }
+
+  /* ── Inputs ─────────────────────────────────────────── */
+  .pixel-input {
+    @apply bg-pixel-black border-4 border-pixel-panelBorder text-pixel-green
+           font-pixel text-xs px-3 py-2 w-full
+           focus:border-pixel-gold focus:outline-none;
+  }
+
+  .pixel-input::placeholder {
+    @apply text-pixel-dim;
+  }
+
+  /* ── Scrollbar ──────────────────────────────────────── */
+  .pixel-scroll::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .pixel-scroll::-webkit-scrollbar-track {
+    background: #1A1A4E;
+    border-left: 2px solid #000;
+  }
+
+  .pixel-scroll::-webkit-scrollbar-thumb {
+    background: #5558CC;
+    border: 2px solid #000;
+  }
+
+  /* ── Decorative space layer ─────────────────────────── */
+  .space-layer {
+    @apply fixed inset-0 pointer-events-none overflow-hidden;
+    z-index: 0;
+  }
+
+  .pixel-cloud {
+    @apply absolute;
+    top: var(--cloud-y, 15%);
+    opacity: 0.18;
+  }
+
+  .pixel-star {
+    @apply absolute w-0.5 h-0.5 bg-pixel-white;
+  }
+
+  /* ── Pixel scrollbar for chat ──────────────────────── */
+  .chat-msg-area::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .chat-msg-area::-webkit-scrollbar-track {
+    background: #1A1A4E;
+    border-left: 2px solid #000;
+  }
+
+  .chat-msg-area::-webkit-scrollbar-thumb {
+    background: #5558CC;
+    border: 2px solid #000;
+  }
+}
+
+@layer utilities {
+  /* ── Pixel shadows ───────────────────────────────────── */
+  .pixel-shadow      { box-shadow: 4px 4px 0px #000000; }
+  .pixel-shadow-sm   { box-shadow: 2px 2px 0px #000000; }
+  .pixel-shadow-lg   { box-shadow: 6px 6px 0px #000000; }
+  .pixel-shadow-gold { box-shadow: 4px 4px 0px #B8860B; }
+  .pixel-shadow-red  { box-shadow: 4px 4px 0px #8B0000; }
+  .pixel-shadow-cyan { box-shadow: 4px 4px 0px #1A5580; }
+  .pixel-shadow-none { box-shadow: none; }
+
+  /* ── Press animation (override shadow to none) ──────── */
+  .pressed {
+    transform: translate(4px, 4px);
+    box-shadow: none !important;
+  }
+
+  /* ── Size-dot shapes ────────────────────────────────── */
+  .size-dot {
+    @apply bg-pixel-white block;
+    border-radius: 0 !important;
+  }
+}
