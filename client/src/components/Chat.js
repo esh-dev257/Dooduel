@@ -110,7 +110,7 @@ function Chat({ roomId, socketId, players }) {
         onClick={toggleMinimize}
       >
         <div className="flex items-center gap-2">
-          <span className="font-pixel text-[10px] text-pixel-gold">💬 CHAT</span>
+          <span className="font-pixel text-[10px] text-pixel-gold">CHAT</span>
           {isMinimized && unreadCount > 0 && (
             <span className="font-pixel text-[8px] text-pixel-white bg-pixel-red border-2 border-pixel-border w-5 h-5 flex items-center justify-center"
               style={{ boxShadow: '2px 2px 0 #000' }}>
@@ -128,7 +128,7 @@ function Chat({ roomId, socketId, players }) {
           <div className="overflow-y-auto p-2 flex flex-col gap-1 chat-msg-area" style={{ maxHeight: '280px' }}>
             {messages.length === 0 && (
               <div className="font-pixel text-[8px] text-pixel-dim text-center py-8">
-                💬<br /><br />NO MESSAGES YET
+                NO MESSAGES YET
               </div>
             )}
             {messages.map((msg, i) => {
@@ -150,16 +150,18 @@ function Chat({ roomId, socketId, players }) {
                   style={{ boxShadow: '2px 2px 0 #000' }}
                 >
                   <div className="flex items-center gap-1.5 mb-0.5">
-                    <span
-                      className="w-4 h-4 border border-pixel-border flex items-center justify-center text-xs flex-shrink-0"
-                      style={{ backgroundColor: msg.avatar?.color || '#444' }}
-                    >
-                      {msg.avatar?.emoji || ''}
-                    </span>
+                    {msg.avatar?.url
+                      ? <div className="w-4 h-4 border border-pixel-border overflow-hidden bg-pixel-bgdark flex-shrink-0">
+                          <img src={msg.avatar.url} alt="avatar" className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+                        </div>
+                      : <span className="w-4 h-4 border border-pixel-border flex items-center justify-center text-xs flex-shrink-0"
+                          style={{ backgroundColor: msg.avatar?.color || '#444' }}>
+                          {msg.avatar?.emoji || ''}
+                        </span>
+                    }
                     <span className="font-pixel text-[8px] text-pixel-gold truncate flex-1">
                       {isSelf ? 'YOU' : msg.username}
                     </span>
-                    <span className="font-pixel text-[6px] text-pixel-dim">{formatTime(msg.timestamp)}</span>
                   </div>
                   <p className="font-pixel text-[10px] text-pixel-white break-words m-0 leading-4">
                     {msg.text}

@@ -1,6 +1,24 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import Canvas from './Canvas';
 
+function AvatarImg({ avatar, size = 'w-10 h-10', textSize = 'text-lg', borderClass = 'border-4' }) {
+  if (avatar?.url) {
+    return (
+      <div className={`${size} ${borderClass} border-pixel-border overflow-hidden bg-pixel-bgdark flex-shrink-0`}>
+        <img src={avatar.url} alt="avatar" className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+      </div>
+    );
+  }
+  return (
+    <div
+      className={`${size} ${borderClass} border-pixel-border flex items-center justify-center ${textSize} flex-shrink-0`}
+      style={{ backgroundColor: avatar?.color || '#444' }}
+    >
+      {avatar?.emoji || '👤'}
+    </div>
+  );
+}
+
 const MINI_W     = 280;
 const MINI_H     = 196;
 const ORIGINAL_W = 800;
@@ -89,7 +107,7 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
     setTimeout(() => setShareStatus(''), 3000);
   }, [roundHistory]);
 
-  const generatePersonalCard = useCallback(() => {
+  const generatePersonalCard = useCallback(async () => {
     const myEntry = leaderboard.find(([id]) => id === socketId);
     if (!myEntry) return null;
     const [, myData] = myEntry;
@@ -104,12 +122,21 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
     ctx.strokeRect(4, 4, CARD_W - 8, CARD_H - 8);
     ctx.fillStyle = '#FFD700'; ctx.font = 'bold 36px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('DOODUEL', CARD_W / 2, 55);
-    const avatarCX = CARD_W / 2, avatarCY = 115, avatarR = 40;
-    ctx.beginPath(); ctx.arc(avatarCX, avatarCY, avatarR, 0, Math.PI * 2);
-    ctx.fillStyle = myData.avatar?.color || '#444'; ctx.fill();
-    ctx.font = '36px sans-serif'; ctx.textBaseline = 'middle';
-    ctx.fillText(myData.avatar?.emoji || '👤', avatarCX, avatarCY);
-    ctx.textBaseline = 'alphabetic';
+    const avatarSize = 80, avatarX = (CARD_W - avatarSize) / 2, avatarY = 75;
+    ctx.fillStyle = myData.avatar?.color || '#444';
+    ctx.fillRect(avatarX, avatarY, avatarSize, avatarSize);
+    if (myData.avatar?.url) {
+      await new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => { ctx.drawImage(img, avatarX, avatarY, avatarSize, avatarSize); resolve(); };
+        img.onerror = resolve;
+        img.src = myData.avatar.url;
+      });
+    } else {
+      ctx.font = '36px sans-serif'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+      ctx.fillText(myData.avatar?.emoji || '👤', CARD_W / 2, avatarY + avatarSize / 2);
+      ctx.textBaseline = 'alphabetic';
+    }
     ctx.fillStyle = '#e8e8e8'; ctx.font = 'bold 24px sans-serif';
     ctx.fillText(myData.username, CARD_W / 2, 185);
     const rankMedals = ['🥇', '🥈', '🥉'];
@@ -148,7 +175,7 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
   }, [leaderboard, socketId, getPlayerAchievements, roundHistory, roomId]);
 
   const handleShareCard = useCallback(async () => {
-    const canvas = generatePersonalCard();
+    const canvas = await generatePersonalCard();
     if (!canvas) { setCardStatus('Could not generate card'); setTimeout(() => setCardStatus(''), 2000); return; }
     try {
       const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
@@ -196,12 +223,7 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
                 style={{ boxShadow: s.shadow, minWidth: '110px', animationDelay: `${rankIdx * 0.1}s` }}
               >
                 <span className="text-xl">{s.medal}</span>
-                <div
-                  className="w-10 h-10 border-4 border-pixel-border flex items-center justify-center text-lg"
-                  style={{ backgroundColor: player.avatar?.color || '#444' }}
-                >
-                  {player.avatar?.emoji || '👤'}
-                </div>
+                <AvatarImg avatar={player.avatar} size="w-10 h-10" textSize="text-lg" borderClass="border-4" />
                 <span className="font-pixel text-[8px] text-pixel-white text-center truncate w-full">{player.username}</span>
                 <span className="font-pixel text-[8px] text-pixel-gold">{player.score} PTS</span>
                 {playerAchievements.length > 0 && (
@@ -226,10 +248,7 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
                     <td className="font-pixel text-[10px] text-pixel-dim px-2 py-1">{i + 4}</td>
                     <td className="font-pixel text-[10px] text-pixel-white px-2 py-1">
                       <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 border-2 border-pixel-border flex items-center justify-center text-sm"
-                          style={{ backgroundColor: player.avatar?.color || '#444' }}>
-                          {player.avatar?.emoji || ''}
-                        </span>
+                        <AvatarImg avatar={player.avatar} size="w-5 h-5" textSize="text-xs" borderClass="border-2" />
                         {player.username}
                       </div>
                     </td>
@@ -249,12 +268,7 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
           <div className="grid grid-cols-2 gap-3">
             {achievements.map((a, i) => (
               <div key={i} className="pixel-card-light p-3 flex items-center gap-3">
-                <div
-                  className="w-10 h-10 border-4 border-pixel-border flex items-center justify-center text-lg flex-shrink-0"
-                  style={{ backgroundColor: a.avatar?.color || '#444' }}
-                >
-                  {a.avatar?.emoji || ''}
-                </div>
+                <AvatarImg avatar={a.avatar} size="w-10 h-10" textSize="text-lg" borderClass="border-4" />
                 <span className="text-xl">{ACHIEVEMENT_ICONS[a.icon] || ''}</span>
                 <div className="flex flex-col gap-0.5">
                   <span className="font-pixel text-[8px] text-pixel-gold">{a.title}</span>

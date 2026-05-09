@@ -194,10 +194,14 @@ function Room({ initialState, socketId, onLeave }) {
             style={{ boxShadow: '4px 4px 0 #000' }}
           >
             {toast.avatar && (
-              <span className="w-5 h-5 border-2 border-pixel-border flex items-center justify-center text-sm"
-                style={{ backgroundColor: toast.avatar.color }}>
-                {toast.avatar.emoji}
-              </span>
+              toast.avatar.url
+                ? <div className="w-5 h-5 border-2 border-pixel-border overflow-hidden bg-pixel-bgdark flex-shrink-0">
+                    <img src={toast.avatar.url} alt="avatar" className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+                  </div>
+                : <span className="w-5 h-5 border-2 border-pixel-border flex items-center justify-center text-sm flex-shrink-0"
+                    style={{ backgroundColor: toast.avatar.color || '#444' }}>
+                    {toast.avatar.emoji}
+                  </span>
             )}
             {toast.message}
           </div>

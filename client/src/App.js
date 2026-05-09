@@ -5,9 +5,6 @@ import socket from './socket';
 import './tailwind.css';
 
 const LOAD_MSGS = [
-  'CONNECTING TO SERVER...',
-  'WAKING SERVER FROM SLEEP...',
-  'LOADING WORD LIBRARY...',
   'SETTING UP PIXEL CANVAS...',
   'READY!',
 ];
@@ -140,11 +137,7 @@ function App() {
             <div className="font-pixel text-[10px] text-pixel-white animate-blink-step text-center">
               {loadMsg}
             </div>
-            <div className="font-pixel text-[8px] text-pixel-dim text-center border-4 border-pixel-panelBorder bg-pixel-panel px-4 py-3 max-w-xs"
-              style={{ boxShadow: '4px 4px 0 #000' }}>
-              <span className="text-pixel-gold">⚡ HEADS UP</span><br /><br />
-              First load may take 30–60s while<br />the server wakes. After that instant!
-            </div>
+
           </div>
         ) : !roomState ? (
           <JoinRoom onJoin={handleJoin} />

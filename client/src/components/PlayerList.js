@@ -1,5 +1,23 @@
 import React from 'react';
 
+function AvatarImg({ avatar, size = 'w-7 h-7', textSize = 'text-sm' }) {
+  if (avatar?.url) {
+    return (
+      <div className={`${size} border-2 border-pixel-border overflow-hidden flex-shrink-0 bg-pixel-bgdark`}>
+        <img src={avatar.url} alt="avatar" className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+      </div>
+    );
+  }
+  return (
+    <div
+      className={`${size} border-2 border-pixel-border flex items-center justify-center ${textSize} flex-shrink-0`}
+      style={{ backgroundColor: avatar?.color || '#444' }}
+    >
+      {avatar?.emoji || '👤'}
+    </div>
+  );
+}
+
 function PlayerList({ players, host, socketId }) {
   const sorted = Object.entries(players).sort(([, a], [, b]) => b.score - a.score);
 
@@ -24,12 +42,7 @@ function PlayerList({ players, host, socketId }) {
             style={{ boxShadow: '2px 2px 0 #000' }}
           >
             {/* Avatar */}
-            <div
-              className="w-7 h-7 border-2 border-pixel-border flex items-center justify-center text-sm flex-shrink-0"
-              style={{ backgroundColor: player.avatar?.color || '#444' }}
-            >
-              {player.avatar?.emoji || '👤'}
-            </div>
+            <AvatarImg avatar={player.avatar} size="w-7 h-7" textSize="text-sm" />
 
             {/* Info */}
             <div className="flex flex-col flex-1 min-w-0">

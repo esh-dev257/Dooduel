@@ -59,9 +59,14 @@ function registerHandlers(io, socket) {
     roomId = roomId.trim().toLowerCase().slice(0, 20);
 
     // Sanitise avatar from client
-    const clientAvatar = (avatar?.emoji && avatar?.color)
-      ? { emoji: String(avatar.emoji).slice(0, 8), color: String(avatar.color).slice(0, 20) }
-      : null;
+    let clientAvatar = null;
+    if (avatar && (avatar.url || avatar.emoji || avatar.color)) {
+      clientAvatar = {
+        emoji: String(avatar.emoji || '').slice(0, 8),
+        color: String(avatar.color || '#444').slice(0, 20),
+        url:   avatar.url ? String(avatar.url).slice(0, 100) : null,
+      };
+    }
 
     // Leave any previous rooms
     const prevRooms = [...socket.rooms].filter(r => r !== socket.id);

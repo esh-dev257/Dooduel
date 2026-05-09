@@ -1,5 +1,23 @@
 import React from 'react';
 
+function AvatarImg({ avatar, size = 'w-12 h-12', textSize = 'text-2xl', borderClass = 'border-4' }) {
+  if (avatar?.url) {
+    return (
+      <div className={`${size} ${borderClass} border-pixel-border overflow-hidden bg-pixel-bgdark`}>
+        <img src={avatar.url} alt="avatar" className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+      </div>
+    );
+  }
+  return (
+    <div
+      className={`${size} ${borderClass} border-pixel-border flex items-center justify-center ${textSize}`}
+      style={{ backgroundColor: avatar?.color || '#444' }}
+    >
+      {avatar?.emoji || '👤'}
+    </div>
+  );
+}
+
 function scoreColor(score) {
   if (score >= 8) return 'text-pixel-green';
   if (score >= 5) return 'text-pixel-gold';
@@ -48,12 +66,7 @@ function Results({ results, ratings }) {
                 className="pixel-card border-pixel-gold flex flex-col items-center gap-2 p-4 animate-winner-pop"
                 style={{ boxShadow: '4px 4px 0 #B8860B' }}
               >
-                <div
-                  className="w-12 h-12 border-4 border-pixel-border flex items-center justify-center text-2xl"
-                  style={{ backgroundColor: w.avatar?.color || '#444' }}
-                >
-                  {w.avatar?.emoji || '👤'}
-                </div>
+                <AvatarImg avatar={w.avatar} size="w-12 h-12" textSize="text-2xl" borderClass="border-4" />
                 <span className="font-pixel text-[10px] text-pixel-white">{w.username}</span>
                 <span className="font-pixel text-[8px] text-pixel-gold">
                   {w.votes} VOTE{w.votes !== 1 ? 'S' : ''}
@@ -128,12 +141,7 @@ function Results({ results, ratings }) {
                   </td>
                   <td className={`font-pixel text-[10px] px-2 py-2 ${i === 0 ? 'text-pixel-black' : 'text-pixel-white'}`}>
                     <div className="flex items-center gap-2">
-                      <span
-                        className="w-5 h-5 border-2 border-pixel-border flex items-center justify-center text-xs flex-shrink-0"
-                        style={{ backgroundColor: player.avatar?.color || '#444' }}
-                      >
-                        {player.avatar?.emoji || ''}
-                      </span>
+                      <AvatarImg avatar={player.avatar} size="w-5 h-5" textSize="text-xs" borderClass="border-2" />
                       {player.username}
                     </div>
                   </td>

@@ -1,16 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import socket from '../socket';
 
-const AVATARS = [
-  { id: 0, emoji: '👾', color: '#6600cc' },
-  { id: 1, emoji: '🤖', color: '#E53935' },
-  { id: 2, emoji: '👻', color: '#00897B' },
-  { id: 3, emoji: '🦊', color: '#FF8800' },
-  { id: 4, emoji: '🐱', color: '#AA00AA' },
-  { id: 5, emoji: '🌟', color: '#1565C0' },
-];
-
-
+const AVATARS = Array.from({ length: 18 }, (_, i) => `/avatar/Avatar (${i + 1}).png`);
 
 function JoinRoom({ onJoin }) {
   const [username,  setUsername]  = useState('');
@@ -23,7 +14,7 @@ function JoinRoom({ onJoin }) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const room = params.get('room');
-    if (room) setRoomId(room.trim().toLowerCase().slice(0, 20));
+    if (room) setRoomId(room.trim().toUpperCase().slice(0, 4));
   }, []);
 
   useEffect(() => {
@@ -39,10 +30,9 @@ function JoinRoom({ onJoin }) {
     setTimeout(() => setShake(false), 400);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!username.trim() || !roomId.trim()) {
-      setError('BOTH FIELDS ARE REQUIRED');
+  const doJoin = (roomCode) => {
+    if (!username.trim()) {
+      setError('PLAYER NAME IS REQUIRED');
       triggerShake();
       return;
     }
@@ -52,13 +42,13 @@ function JoinRoom({ onJoin }) {
 
     if (!socket.connected) socket.connect();
 
-    const selectedAvatar = AVATARS[avatarIdx];
+    const avatarUrl = AVATARS[avatarIdx];
 
     const emitJoin = () => {
       socket.emit('joinRoom', {
         username: username.trim(),
-        roomId:   roomId.trim(),
-        avatar:   { emoji: selectedAvatar.emoji, color: selectedAvatar.color },
+        roomId:   roomCode.trim(),
+        avatar:   { emoji: '', color: '#2A2D7A', url: avatarUrl },
       }, (response) => {
         setJoining(false);
         if (response.error) {
@@ -70,7 +60,7 @@ function JoinRoom({ onJoin }) {
           const prev = JSON.parse(localStorage.getItem('dooduel_stats') || '{}');
           localStorage.setItem('dooduel_stats', JSON.stringify({ ...prev, username: username.trim(), avatarIdx }));
         } catch {}
-        onJoin(response.roomState, response.socketId, roomId.trim().toLowerCase());
+        onJoin(response.roomState, response.socketId, roomCode.trim().toLowerCase());
       });
     };
 
@@ -89,127 +79,190 @@ function JoinRoom({ onJoin }) {
     }
   };
 
-  const selectedAvatar = AVATARS[avatarIdx];
+  const handleJoin = () => {
+    if (!roomId.trim()) {
+      setError('ROOM CODE IS REQUIRED');
+      triggerShake();
+      return;
+    }
+    doJoin(roomId);
+  };
+
+  const handleCreate = () => {
+    const code = Math.random().toString(36).slice(2, 6).toUpperCase();
+    setRoomId(code);
+    doJoin(code);
+  };
+
+  const prevAvatar = () => setAvatarIdx(i => (i - 1 + AVATARS.length) % AVATARS.length);
+  const nextAvatar = () => setAvatarIdx(i => (i + 1) % AVATARS.length);
 
   return (
-    <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
+    <div className="flex-1 flex items-center justify-center p-4 sm:p-8 overflow-y-auto">
       <div
-        className={`pixel-card max-w-[520px] w-full ${shake ? 'animate-shake' : ''}`}
+        className={`pixel-card max-w-[480px] w-full ${shake ? 'animate-shake' : ''}`}
         style={{ position: 'relative', zIndex: 2 }}
       >
-        {/* Top bar */}
-        <div className="flex items-center gap-2 px-4 py-2 border-b-4 border-pixel-border bg-pixel-bgdark">
-          <span className="font-pixel text-xs text-pixel-gold">DOO<span className="text-pixel-pink">DUEL</span></span>
-        </div>
+        <div className="p-6 sm:p-8 flex flex-col gap-6">
 
-        <div className="p-6 flex flex-col gap-4">
-          {/* Hero */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex flex-col gap-2">
-              <div className="font-pixel text-base text-pixel-gold leading-6" style={{ textShadow: '2px 2px 0 #000' }}>
-                READY,<br />{username.trim() ? username.trim().toUpperCase() : 'PLAYER 1'}?
+          {/* Hero Row */}
+          <div className="flex flex-col sm:flex-row gap-6 items-start">
+
+            {/* Left — hero copy */}
+            <div className="flex-1 flex flex-col gap-3">
+              <div className="flex flex-row items-baseline">
+                <span className="font-pixel text-xl text-pixel-gold leading-tight">DOO</span>
+                <span className="font-pixel text-xl text-pixel-pink leading-tight">DUEL</span>
               </div>
-              <div className="font-pixel text-[8px] text-pixel-dim">draw it · guess it · win it</div>
-            </div>
-            {/* Avatar preview */}
-            <div
-              className="w-20 h-20 border-4 border-pixel-border flex items-center justify-center text-3xl flex-shrink-0"
-              style={{ backgroundColor: selectedAvatar.color, boxShadow: '4px 4px 0 #000' }}
-            >
-              {selectedAvatar.emoji}
-            </div>
-          </div>
 
-          {/* Avatar picker */}
-          <div>
-            <div className="font-pixel text-[8px] text-pixel-dim mb-10">CHOOSE YOUR FIGHTER</div>
-            <div className="grid grid-cols-6 gap-1.5">
-              {AVATARS.map((av, i) => (
+              <p className="font-pixel text-[11px] text-white leading-relaxed">
+                READY,<br />
+                {username.trim() ? username.trim().toUpperCase() : 'PLAYER 1'}?
+              </p>
+
+              <p className="font-pixel text-[8px] text-pixel-dim leading-loose tracking-wide">
+                DRAW · VOTE · WIN
+              </p>
+
+              {/* Pixel hearts */}
+              {/* <div className="flex flex-col gap-1 mt-1">
+                <div className="flex flex-row gap-1">
+                  {[0,1,2,3].map(i => (
+                    <span key={i} className="text-pixel-pink text-sm">♥</span>
+                  ))}
+                </div>
+                <div className="flex flex-row gap-1">
+                  {[0,1,2,3].map(i => (
+                    <span key={i} className="text-pixel-pink text-sm">♥</span>
+                  ))}
+                </div>
+              </div> */}
+            </div>
+
+            {/* Right — avatar carousel */}
+            <div className="flex flex-col items-center gap-2 self-center sm:self-start">
+              {/* Preview box */}
+              <div className="w-28 h-28 border-4 border-pixel-border bg-pixel-bgdark overflow-hidden"
+                style={{ boxShadow: '4px 4px 0 #000' }}>
+                <img
+                  src={AVATARS[avatarIdx]}
+                  alt="Selected avatar"
+                  className="w-full h-full object-cover"
+                  style={{ imageRendering: 'pixelated' }}
+                  onError={e => { e.target.style.display = 'none'; }}
+                />
+              </div>
+
+              {/* Counter */}
+              <span className="font-pixel text-[8px] text-pixel-dim">
+                {avatarIdx + 1} / {AVATARS.length}
+              </span>
+
+              {/* Arrows */}
+              <div className="flex flex-row gap-4">
                 <button
-                  key={av.id}
                   type="button"
-                  className={`aspect-square border-4 cursor-pointer flex items-center justify-center text-xl transition-transform duration-75
-                    ${i === avatarIdx
-                      ? 'border-pixel-gold scale-110'
-                      : 'border-pixel-border hover:border-pixel-pink hover:-translate-y-0.5'
-                    }`}
-                  style={{
-                    backgroundColor: av.color,
-                    boxShadow: i === avatarIdx ? '4px 4px 0 #B8860B' : '2px 2px 0 #000',
-                  }}
-                  onClick={() => setAvatarIdx(i)}
+                  className="pixel-btn-secondary px-3 py-1 text-base"
+                  onClick={prevAvatar}
+                  disabled={joining}
+                  aria-label="Previous avatar"
                 >
-                  {av.emoji}
+                  ←
                 </button>
-              ))}
+                <button
+                  type="button"
+                  className="pixel-btn-secondary px-3 py-1 text-base"
+                  onClick={nextAvatar}
+                  disabled={joining}
+                  aria-label="Next avatar"
+                >
+                  →
+                </button>
+              </div>
             </div>
           </div>
 
+          {/* Divider */}
+          <div className="border-t-4 border-pixel-border" />
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <div>
-              <label className="font-pixel text-[8px] text-pixel-dim mb-1 block">YOUR NAME</label>
-              <input
-                className="pixel-input"
-                type="text"
-                placeholder="PLAYER ONE"
-                value={username}
-                onChange={(e) => setUsername(e.target.value.slice(0, 10))}
-                maxLength={10}
-                autoFocus
-                disabled={joining}
-              />
+          <div className="flex flex-col gap-4">
+
+            {/* Username */}
+            <div className="flex flex-col gap-1">
+              <label className="font-pixel text-[8px] text-pixel-dim">PLAYER NAME</label>
+              <div className="relative">
+                <input
+                  className="pixel-input"
+                  type="text"
+                  placeholder="ENTER NAME..."
+                  value={username}
+                  onChange={e => setUsername(e.target.value.slice(0, 16))}
+                  maxLength={16}
+                  autoFocus
+                  autoComplete="off"
+                  spellCheck={false}
+                  disabled={joining}
+                />
+                {username.length > 0 && (
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 font-pixel text-[8px] text-pixel-dim pointer-events-none">
+                    {username.length}/16
+                  </span>
+                )}
+              </div>
             </div>
-            <div>
-              <label className="font-pixel text-[8px] text-pixel-dim mb-1 block">ROOM CODE</label>
+
+            {/* Room code */}
+            <div className="flex flex-col gap-1">
+              <label className="font-pixel text-[8px] text-pixel-dim">
+                ROOM CODE <span className="text-pixel-dim">(OPTIONAL)</span>
+              </label>
               <input
-                className="pixel-input"
+                className="pixel-input uppercase"
                 type="text"
-                placeholder="ENTER CODE"
+                placeholder="XXXX"
                 value={roomId}
-                onChange={(e) => setRoomId(e.target.value)}
-                maxLength={20}
+                onChange={e => setRoomId(e.target.value.toUpperCase().slice(0, 4))}
+                maxLength={4}
+                autoComplete="off"
+                spellCheck={false}
                 disabled={joining}
               />
             </div>
 
+            {/* Error */}
             {error && (
               <div
-                className="bg-pixel-red border-4 border-pixel-border text-pixel-white font-pixel text-[10px] p-2"
+                className="border-4 border-pixel-red bg-pixel-panel p-3 animate-shake"
                 style={{ boxShadow: '4px 4px 0 #8B0000' }}
               >
-                {error}
+                <p className="font-pixel text-[9px] text-pixel-red leading-relaxed m-0">
+                  ✕ {error}
+                </p>
               </div>
             )}
 
+            {/* JOIN button */}
             <button
-              type="submit"
+              type="button"
+              className="pixel-btn w-full mt-1"
+              onClick={handleJoin}
               disabled={joining}
-              className="pixel-btn w-full mt-1 text-sm"
             >
-              {joining ? '••• CONNECTING...' : '▶ JOIN GAME'}
+              {joining ? '•••' : '▶ JOIN GAME'}
             </button>
-          </form>
 
-          {/* Divider */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 border-t-2 border-pixel-panelBorder" />
-            <span className="font-pixel text-[8px] text-pixel-dim">— OR —</span>
-            <div className="flex-1 border-t-2 border-pixel-panelBorder" />
+            {/* CREATE button */}
+            <button
+              type="button"
+              className="pixel-btn-secondary w-full"
+              onClick={handleCreate}
+              disabled={joining}
+            >
+              {joining ? '•••' : '+ CREATE ROOM'}
+            </button>
           </div>
 
-          <button
-            type="button"
-            className="pixel-btn-secondary w-full text-xs"
-            disabled={joining}
-            onClick={() => {
-              const code = Math.random().toString(36).slice(2, 6).toUpperCase();
-              setRoomId(code);
-            }}
-          >
-            + CREATE PRIVATE ROOM
-          </button>
         </div>
       </div>
     </div>
