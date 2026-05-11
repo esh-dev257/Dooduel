@@ -34,89 +34,135 @@ function MiniCanvas({ strokes }) {
   );
 }
 
-function Voting({ drawings, socketId, yourAnonId }) {
-  const [votedFor,   setVotedFor]   = useState(null);
-  const [voteError,  setVoteError]  = useState('');
+function Voting({ drawings, socketId, yourAnonId, voteInfo = { totalVotes: 0, totalPlayers: 0 } }) {
+  const [action,    setAction]    = useState(null);  // null | { type: 'vote'|'skip', anonId: string|null }
+  const [locked,    setLocked]    = useState(false);
+  const [voteError, setVoteError] = useState('');
 
   const handleVote = useCallback((anonId) => {
-    if (votedFor || anonId === yourAnonId) return;
+    if (locked || anonId === yourAnonId) return;
     socket.emit('vote', { anonId }, (response) => {
-      if (response.success) { setVotedFor(anonId); setVoteError(''); }
-      else setVoteError(response.error);
+      if (response?.success) {
+        setAction({ type: 'vote', anonId });
+        setLocked(true);
+        setVoteError('');
+      } else {
+        setVoteError(response?.error || 'Vote failed');
+      }
     });
-  }, [votedFor, yourAnonId]);
+  }, [locked, yourAnonId]);
 
-  const entries = Object.entries(drawings);
+  const handleSkip = useCallback(() => {
+    if (locked) return;
+    socket.emit('skipVote');
+    setAction({ type: 'skip', anonId: null });
+    setLocked(true);
+  }, [locked]);
 
   return (
-    <div className="w-full">
-      <h2 className="font-pixel text-xs text-pixel-gold text-center mb-1" style={{ textShadow: '2px 2px 0 #000' }}>
-        VOTE FOR THE BEST DRAWING!
-      </h2>
-      <p className="font-pixel text-[8px] text-pixel-dim text-center mb-4">
-        DRAWINGS ARE ANONYMOUS — VOTE FOR YOUR FAVORITE!
-      </p>
+    <div className="flex flex-col gap-4">
 
+      {/* Header */}
+      <div className="flex flex-col items-center gap-1">
+        <p className="font-pixel text-pixel-gold text-sm" style={{ textShadow: '2px 2px 0 #000' }}>
+          VOTE FOR THE BEST DRAWING!
+        </p>
+
+        <p className="font-pixel text-[8px] text-pixel mt-1 mb-5">
+          VOTES: {voteInfo.totalVotes} / {voteInfo.totalPlayers} PLAYERS
+        </p>
+      </div>
+
+      {/* Error */}
       {voteError && (
-        <div className="bg-pixel-red border-4 border-pixel-border font-pixel text-[10px] text-pixel-white p-2 mb-3"
+        <div className="bg-pixel-red border-4 border-pixel-border font-pixel text-[10px] text-white p-2"
           style={{ boxShadow: '4px 4px 0 #8B0000' }}>
           {voteError}
         </div>
       )}
-      {votedFor && (
-        <div className="bg-pixel-green border-4 border-pixel-border font-pixel text-[10px] text-pixel-black p-2 mb-3 text-center"
-          style={{ boxShadow: '4px 4px 0 #000' }}>
-          ✓ VOTE CAST!
+
+      {/* Status after action */}
+      {action && (
+        <div className={`text-center border-4 px-4 py-2 font-pixel text-[9px]
+          ${action.type === 'vote'
+            ? 'border-pixel-green bg-pixel-panel text-pixel-green'
+            : 'border-pixel-dim bg-pixel-panel text-pixel-dim'}`}
+          style={{ boxShadow: '4px 4px 0 #000' }}
+        >
+          {action.type === 'vote'
+            ? `YOU VOTED FOR DRAWING ${drawings[action.anonId]?.label || action.anonId}`
+            : 'YOU SKIPPED THIS ROUND'}
         </div>
       )}
 
+      {/* Drawing grid */}
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
-        {entries.map(([anonId, { label, strokes }]) => {
-          const isSelf  = anonId === yourAnonId;
-          const isVoted = votedFor === anonId;
+        {Object.entries(drawings).map(([anonId, drawing]) => {
+          const isOwn    = anonId === yourAnonId;
+          const isVoted  = action?.type === 'vote' && action.anonId === anonId;
 
           return (
             <div
               key={anonId}
-              className={`flex border-4 transition-transform duration-75
-                ${isVoted ? 'border-pixel-green' : isSelf ? 'border-pixel-dim opacity-55' : 'border-pixel-border hover:-translate-y-1 hover:border-pixel-pink cursor-pointer'}`}
+              className={`flex border-1 transition-transform duration-75
+                ${isOwn
+                  ? 'opacity-60 border-pixel-borderAlt cursor-default'
+                  : isVoted
+                    ? 'border-pixel-green'
+                    : locked
+                      ? 'border-pixel-border opacity-70 cursor-default'
+                      : 'border-pixel-border hover:-translate-y-1 hover:border-pixel-pink cursor-pointer'}`}
               style={{ boxShadow: isVoted ? '4px 4px 0 #006030' : '4px 4px 0 #000' }}
             >
-              {/* Label tab */}
-              <div className="w-10 flex-shrink-0 bg-pixel-white border-r-4 border-pixel-border flex items-center justify-center">
-                <span className="font-pixel text-xs text-pixel-black">{label}</span>
-              </div>
+              {/* Letter label strip */}
+
 
               {/* Card body */}
-              <div className="flex-1 p-2 flex flex-col gap-2 bg-pixel-card">
-                <MiniCanvas strokes={strokes} />
-
-                <div className="flex items-center justify-between gap-2">
-                  {isSelf && (
-                    <span className="font-pixel text-[8px] text-pixel-dim border-2 border-pixel-dim px-1">(YOURS)</span>
-                  )}
-                  {isVoted && (
-                    <span className="font-pixel text-[8px] text-pixel-green border-2 border-pixel-green px-1 ml-auto">✓ VOTED</span>
-                  )}
-                  {!isSelf && !votedFor && (
-                    <button
-                      className="pixel-btn w-full text-[8px] py-1 mt-1"
-                      onClick={() => handleVote(anonId)}
-                    >
-                      VOTE ▶
-                    </button>
-                  )}
-                  {!isSelf && votedFor && !isVoted && (
-                    <button className="pixel-btn-secondary w-full text-[8px] py-1 mt-1 opacity-50 cursor-not-allowed" disabled>
-                      VOTED
-                    </button>
-                  )}
+              <div className="flex flex-col flex-1 bg-pixel-panel p-2 gap-2">
+                <div className="border-2 border-pixel-border">
+                  <MiniCanvas strokes={drawing.strokes} />
                 </div>
+
+                {/* Vote button — only if not own, not locked */}
+                {!isOwn && !locked && (
+                  <button
+                    className="pixel-btn w-full text-[9px] py-2"
+                    onClick={() => handleVote(anonId)}
+                  >
+                    VOTE
+                  </button>
+                )}
+
+                {/* Voted indicator */}
+                {isVoted && (
+                  <div className="border-4 border-pixel-green bg-pixel-panel text-center py-2">
+                    <span className="font-pixel text-[9px] text-pixel-green">✓ VOTED</span>
+                  </div>
+                )}
+
+                {/* Locked but not voted on this card */}
+                {locked && !isVoted && !isOwn && (
+                  <div className="border-4 border-pixel-borderAlt bg-pixel-panel text-center py-2">
+                    <span className="font-pixel text-[8px] text-pixel-dim">—</span>
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Skip button — only before acting */}
+      {!locked && (
+        <div className="flex justify-center mt-2">
+          <button
+            className="pixel-btn-secondary px-8 py-2 text-[9px]"
+            onClick={handleSkip}
+          >
+            — SKIP VOTING
+          </button>
+        </div>
+      )}
     </div>
   );
 }

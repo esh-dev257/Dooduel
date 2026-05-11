@@ -304,10 +304,10 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
       {/* Actions */}
       <div className="flex flex-wrap gap-3 justify-center">
         <button className="pixel-btn text-[10px] px-4 py-2" onClick={handleShareCard}>
-          {cardStatus || '📋 SHARE MY CARD'}
+          {cardStatus || 'SHARE MY CARD'}
         </button>
         <button className="pixel-btn-secondary text-[10px] px-4 py-2" style={{ boxShadow: '4px 4px 0 #1A5580', borderColor: '#44AAFF' }} onClick={handleShare}>
-          {shareStatus || '🖼 SHARE COLLAGE'}
+          {shareStatus || 'SHARE COLLAGE'}
         </button>
         <button className="pixel-btn-secondary text-[10px] px-4 py-2" onClick={onBackToLobby}>
           ↩ BACK TO LOBBY

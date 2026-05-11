@@ -269,11 +269,7 @@ function Room({ initialState, socketId, onLeave }) {
               <span className="font-pixel text-[7px] text-pixel-dim">
                 ROUND {round}/{totalRounds}
               </span>
-              {difficulty && (
-                <span className={`font-pixel text-[6px] text-pixel-black border border-pixel-border px-1 ${diffBadgeColor}`}>
-                  {difficulty.toUpperCase()}
-                </span>
-              )}
+              {}
             </div>
           )}
         </div>
@@ -360,14 +356,12 @@ function Room({ initialState, socketId, onLeave }) {
               <div className="flex flex-col h-full">
                 {/* Prompt banner */}
                 <div className="flex items-center gap-3 bg-pixel-bgdark border-b-4 border-pixel-border px-4 py-3 border-l-8 border-l-pixel-gold flex-shrink-0">
-                  <span className="font-pixel text-[8px] text-pixel-dim whitespace-nowrap">
-                    Q{round}/{totalRounds}
-                  </span>
+
                   <span className="font-pixel text-xs text-white flex-1 text-center">
                     DRAW: <span className="text-pixel-gold">{prompt}</span>
                   </span>
                   {difficulty && (
-                    <span className={`font-pixel text-[8px] text-pixel-black border-2 border-pixel-border px-2 whitespace-nowrap ${diffBadgeColor}`}>
+                    <span className={`font-pixel text-[8px] py-2 text-pixel-black border-2 border-pixel-border px-2 whitespace-nowrap ${diffBadgeColor}`}>
                       {difficulty.toUpperCase()}
                     </span>
                   )}
@@ -381,17 +375,14 @@ function Room({ initialState, socketId, onLeave }) {
             {/* VOTING */}
             {gameState === 'VOTING' && (
               <div className="p-4">
-                <div className="font-pixel text-[10px] text-pixel-dim text-center mb-3">
-                  VOTES: {voteInfo.totalVotes}/{voteInfo.totalPlayers} PLAYERS
-                </div>
-                <Voting drawings={drawings} socketId={socketId} yourAnonId={yourAnonId} />
+                <Voting drawings={drawings} socketId={socketId} yourAnonId={yourAnonId} voteInfo={voteInfo} />
               </div>
             )}
 
             {/* RESULT */}
             {gameState === 'RESULT' && (
               <div className="p-4">
-                <Results results={results} ratings={ratings} />
+                <Results results={results} ratings={ratings} socketId={socketId} />
                 <p className="font-pixel text-[8px] text-pixel-dim text-center mt-4 animate-blink">
                   {isFinalRound ? 'FINAL RESULTS LOADING...' : 'NEXT ROUND STARTING SOON...'}
                 </p>

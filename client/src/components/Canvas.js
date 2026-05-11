@@ -296,9 +296,9 @@ function Canvas({ disabled }) {
           {/* Tool buttons */}
           <div className="flex flex-row gap-2">
             {[
-              { id: 'pen',    label: '✏ PEN'   },
-              { id: 'eraser', label: '◻ ERASE' },
-              { id: 'fill',   label: '▣ FILL'  },
+              { id: 'pen',    label: '‎PEN‎ '   },
+              { id: 'eraser', label: 'ERASE' },
+              { id: 'fill',   label: 'FILL'  },
             ].map(tool => (
               <button
                 key={tool.id}
@@ -326,7 +326,7 @@ function Canvas({ disabled }) {
               ↩ UNDO
             </button>
             <button
-              className="font-pixel text-[8px] px-3 py-2 border-4 border-pixel-red bg-pixel-red text-white shadow-pixel-red hover:opacity-80 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-transform duration-75"
+              className="font-pixel text-[8px] px-3 py-2 border-4 border-pixel-border bg-pixel-red text-white shadow-pixel-sm hover:border-pixel-gold active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-transform duration-75  "
               onClick={handleClear}
             >
               ✕ CLEAR

@@ -87,47 +87,60 @@ function Chat({ roomId, socketId, players }) {
     inputRef.current?.focus();
   }, []);
 
-  const toggleMinimize = useCallback(() => {
-    setIsMinimized(prev => {
-      if (prev) setUnreadCount(0);
-      return !prev;
-    });
+  const expand = useCallback(() => {
+    setIsMinimized(false);
+    setUnreadCount(0);
+  }, []);
+
+  const collapse = useCallback(() => {
+    setIsMinimized(true);
   }, []);
 
   return (
-    <div
-      className="flex flex-col bg-pixel-panel border-l-4 border-pixel-border overflow-hidden flex-shrink-0 transition-[width] duration-200"
-      style={{ width: isMinimized ? '40px' : '260px' }}
-    >
-      {/* Header — always visible, clicking toggles minimize */}
-      <div
-        className="h-10 flex flex-row items-center justify-between px-2 border-b-4 border-pixel-border bg-pixel-bgdark flex-shrink-0 cursor-pointer select-none"
-        onClick={toggleMinimize}
-      >
-        {!isMinimized && (
-          <span className="font-pixel text-[9px] text-pixel-gold whitespace-nowrap">💬 CHAT</span>
-        )}
-        <div className="flex flex-row items-center gap-1 ml-auto">
-          {isMinimized && unreadCount > 0 && (
-            <span className="bg-pixel-red border-2 border-pixel-border font-pixel text-[7px] text-white w-5 h-5 flex items-center justify-center"
-              style={{ boxShadow: '2px 2px 0 #000' }}>
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-          <span className="font-pixel text-[8px] text-pixel-dim">
-            {isMinimized ? '◀' : '▶'}
-          </span>
-        </div>
-      </div>
+    <div className={`flex flex-col bg-pixel-panel border-l-4 border-pixel-border overflow-hidden flex-shrink-0 transition-[width] duration-200 ${isMinimized ? 'w-8' : 'w-[260px]'}`}>
 
-      {/* Body — only when expanded */}
+      {/* === MINIMIZED STATE === */}
+      {isMinimized && (
+        <div
+          className="flex flex-col items-center justify-start pt-3 gap-3 h-full cursor-pointer select-none"
+          onClick={expand}
+        >
+          {unreadCount > 0 && (
+            <div className="bg-pixel-red border-2 border-pixel-border w-5 h-5 flex items-center justify-center flex-shrink-0" style={{ boxShadow: '2px 2px 0 #000' }}>
+              <span className="font-pixel text-[6px] text-white leading-none">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            </div>
+          )}
+          <div className="flex-1 flex items-center justify-center">
+            <span
+              className="font-pixel text-[8px] text-pixel-gold whitespace-nowrap"
+              style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+            >
+               CHAT
+            </span>
+          </div>
+          <span className="font-pixel text-[8px] text-pixel-dim pb-2">▶</span>
+        </div>
+      )}
+
+      {/* === EXPANDED STATE === */}
       {!isMinimized && (
         <>
+          {/* Header */}
+          <div
+            className="h-10 flex flex-row items-center justify-between px-3 border-b-4 border-pixel-border bg-pixel-bgdark flex-shrink-0 cursor-pointer select-none"
+            onClick={collapse}
+          >
+            <span className="font-pixel text-[9px] text-pixel-gold whitespace-nowrap"> CHAT</span>
+            <span className="font-pixel text-[8px] text-pixel-dim">◀</span>
+          </div>
+
           {/* Messages */}
           <div className="flex-1 overflow-y-auto flex flex-col gap-1 p-2 chat-msg-area min-h-0">
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center flex-1 gap-2 py-8">
-                <span className="text-2xl">💬</span>
+                <span className="text-2xl"></span>
                 <span className="font-pixel text-[7px] text-pixel-dim text-center">NO MESSAGES YET</span>
               </div>
             )}

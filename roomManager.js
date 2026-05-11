@@ -11,6 +11,7 @@ function createRoom(roomId) {
     currentPrompt: null,
     drawings: {},
     votes: {},
+    skips: new Set(),
     round: 0,
     timer: null,
     timerType: null, // 'interval' | 'timeout'
@@ -376,12 +377,40 @@ function getAnonymousDrawings(roomId) {
   return anonDrawings;
 }
 
+function recordSkip(roomId, socketId) {
+  const room = rooms[roomId];
+  if (!room) return false;
+  if (room.gameState !== 'VOTING') return false;
+  if (room.skips.has(socketId)) return false;
+  if (room.votes[socketId]) return false;
+  room.skips.add(socketId);
+  room.lastActivity = Date.now();
+  return true;
+}
+
+function allPlayersActed(roomId) {
+  const room = rooms[roomId];
+  if (!room) return false;
+  const totalActed = Object.keys(room.votes).length + room.skips.size;
+  const totalPlayers = Object.keys(room.players).length;
+  return totalPlayers > 0 && totalActed >= totalPlayers;
+}
+
+function getVoteInfo(roomId) {
+  const room = rooms[roomId];
+  if (!room) return { totalVotes: 0, totalPlayers: 0 };
+  const totalActed = Object.keys(room.votes).length + room.skips.size;
+  const totalPlayers = Object.keys(room.players).length;
+  return { totalVotes: totalActed, totalPlayers };
+}
+
 function resetRound(roomId) {
   const room = rooms[roomId];
   if (!room) return;
 
   room.drawings = {};
   room.votes = {};
+  room.skips = new Set();
   room.currentPrompt = null;
   room.anonMap = null;
   room.anonReverseMap = null;
@@ -533,6 +562,7 @@ function resetGame(roomId) {
   room.roundHistory = [];
   room.drawings = {};
   room.votes = {};
+  room.skips = new Set();
   room.currentPrompt = null;
   room.gameState = 'WAITING';
   room.anonMap = null;
@@ -611,6 +641,9 @@ module.exports = {
   castVote,
   castAnonVote,
   tallyVotes,
+  recordSkip,
+  allPlayersActed,
+  getVoteInfo,
   resetRound,
   getAllDrawings,
   getAnonymousDrawings,

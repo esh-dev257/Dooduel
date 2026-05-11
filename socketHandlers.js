@@ -8,6 +8,9 @@ const {
   storeFillAction,
   clearPlayerDrawing,
   castAnonVote,
+  recordSkip,
+  allPlayersActed,
+  getVoteInfo,
   clearRoomTimer,
   getGameSummary,
   resetGame,
@@ -172,16 +175,30 @@ function registerHandlers(io, socket) {
     callback?.(result);
 
     if (result.success) {
-      const room = getRoom(roomId);
-      if (room) {
-        const totalPlayers = Object.keys(room.players).length;
-        const totalVotes = Object.keys(room.votes).length;
-        io.to(roomId).emit('voteUpdate', { totalVotes, totalPlayers });
+      const voteInfo = getVoteInfo(roomId);
+      io.to(roomId).emit('voteUpdate', voteInfo);
 
-        // All players voted — advance early
-        if (totalVotes >= totalPlayers) {
-          advanceToResults(io, roomId);
-        }
+      if (allPlayersActed(roomId)) {
+        advanceToResults(io, roomId);
+      }
+    }
+  });
+
+  // --- Skip vote ---
+  socket.on('skipVote', () => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return;
+
+    const room = getRoom(roomId);
+    if (!room || room.gameState !== 'VOTING') return;
+
+    const recorded = recordSkip(roomId, socket.id);
+    if (recorded) {
+      const voteInfo = getVoteInfo(roomId);
+      io.to(roomId).emit('voteUpdate', voteInfo);
+
+      if (allPlayersActed(roomId)) {
+        advanceToResults(io, roomId);
       }
     }
   });
@@ -269,9 +286,7 @@ function registerHandlers(io, socket) {
 
     // Broadcast updated vote count if in voting phase
     if (room.gameState === 'VOTING') {
-      const totalPlayers = Object.keys(room.players).length;
-      const totalVotes = Object.keys(room.votes).length;
-      io.to(roomId).emit('voteUpdate', { totalVotes, totalPlayers });
+      io.to(roomId).emit('voteUpdate', getVoteInfo(roomId));
     }
   });
 }

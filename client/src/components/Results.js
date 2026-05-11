@@ -32,7 +32,7 @@ function scoreBarColor(score) {
   return 'bg-pixel-red';
 }
 
-function Results({ results, ratings }) {
+function Results({ results, ratings, socketId }) {
   if (!results) {
     return (
       <div className="flex flex-col items-center gap-4 p-6">
@@ -43,7 +43,7 @@ function Results({ results, ratings }) {
   }
 
   const { winners, scores } = results;
-  const scoreboard   = Object.entries(scores).sort(([, a], [, b]) => b.score - a.score);
+  const scoreboard    = Object.entries(scores).sort(([, a], [, b]) => b.score - a.score);
   const ratingEntries = Object.entries(ratings || {}).sort(([, a], [, b]) => b.score - a.score);
 
   return (
@@ -67,7 +67,7 @@ function Results({ results, ratings }) {
                 style={{ boxShadow: '4px 4px 0 #B8860B' }}
               >
                 <AvatarImg avatar={w.avatar} size="w-12 h-12" textSize="text-2xl" borderClass="border-4" />
-                <span className="font-pixel text-[10px] text-pixel-white">{w.username}</span>
+                <span className="font-pixel text-[10px] text-white">{w.username}</span>
                 <span className="font-pixel text-[8px] text-pixel-gold">
                   {w.votes} VOTE{w.votes !== 1 ? 'S' : ''}
                 </span>
@@ -77,42 +77,72 @@ function Results({ results, ratings }) {
         </div>
       )}
 
-      {/* Rating cards */}
+      {/* Drawing ratings */}
       {ratingEntries.length > 0 && (
         <div className="flex flex-col gap-2">
           <h3 className="font-pixel text-[10px] text-pixel-gold">DRAWING RATINGS</h3>
           <div className="flex flex-wrap gap-3">
-            {ratingEntries.map(([id, rating]) => (
-              <div key={id} className="pixel-card-light p-3 flex flex-col gap-2" style={{ minWidth: '170px', maxWidth: '230px' }}>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-pixel text-[8px] text-pixel-panel truncate">{rating.username}</span>
-                  <span className={`font-pixel text-xs ${scoreColor(rating.score)}`}>{rating.score}/10</span>
-                </div>
-                <div className={`font-pixel text-[8px] ${scoreColor(rating.score)}`}>{rating.label}</div>
-
-                {/* Breakdown bars */}
-                {[
-                  { label: 'EFFORT',   val: rating.breakdown.effort },
-                  { label: 'COVERAGE', val: rating.breakdown.coverage },
-                  { label: 'COLORS',   val: rating.breakdown.colorVariety },
-                  { label: 'DETAIL',   val: rating.breakdown.detail },
-                ].map((b) => (
-                  <div key={b.label} className="flex flex-col gap-0.5">
-                    <span className="font-pixel text-[6px] text-pixel-panel">{b.label}</span>
-                    <div className="w-full h-2 bg-pixel-bgdark border-2 border-pixel-border">
-                      <div
-                        className={`h-full ${scoreBarColor(b.val)} transition-[width] duration-700`}
-                        style={{ width: `${(b.val / 10) * 100}%` }}
-                      />
-                    </div>
+            {ratingEntries.map(([sid, rating]) => {
+              const isOwn = sid === socketId;
+              return (
+                <div
+                  key={sid}
+                  className={`flex flex-col gap-2 p-3 border-4
+                    ${isOwn
+                      ? 'pixel-card-light border-pixel-gold'
+                      : 'pixel-card border-pixel-borderAlt'}`}
+                  style={{
+                    minWidth: isOwn ? '200px' : '150px',
+                    maxWidth: isOwn ? '240px' : '180px',
+                    boxShadow: isOwn ? '4px 4px 0 #B8860B' : '4px 4px 0 #000'
+                  }}
+                >
+                  {/* Name + score — always visible */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-pixel text-[8px] text-white truncate">{rating.username}</span>
+                    <span className={`font-pixel text-xs ${scoreColor(rating.score)}`}>{rating.score}/10</span>
                   </div>
-                ))}
 
-                <div className="font-pixel text-[8px] text-pixel-gold text-right">
-                  +{Math.round(rating.score * 10)} PTS
+                  {/* Label — always visible */}
+                  <span className={`font-pixel text-[8px] ${scoreColor(rating.score)}`}>{rating.label}</span>
+
+                  {/* Own drawing: full breakdown */}
+                  {isOwn && (
+                    <>
+                      {[
+                        { key: 'effort',       label: 'EFFORT'   },
+                        { key: 'coverage',     label: 'COVERAGE' },
+                        { key: 'colorVariety', label: 'COLORS'   },
+                        { key: 'detail',       label: 'DETAIL'   },
+                      ].map(({ key, label }) => {
+                        const val = rating.breakdown?.[key] ?? 0;
+                        return (
+                          <div key={key} className="flex flex-col gap-0.5">
+                            <span className="font-pixel text-[6px] text-pixel-dim">{label}</span>
+                            <div className="w-full h-2 bg-pixel-bgdark border-2 border-pixel-border">
+                              <div
+                                className={`h-full ${scoreBarColor(val)} transition-[width] duration-700`}
+                                style={{ width: `${(val / 10) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div className="border-t-2 border-pixel-borderAlt pt-2 text-right">
+                        <span className="font-pixel text-[10px] text-pixel-gold">
+                          +{Math.round(rating.score * 10)} PTS
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Others: private notice */}
+                  {!isOwn && (
+                    <span className="font-pixel text-[7px] text-pixel-dim">— details private</span>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -139,7 +169,7 @@ function Results({ results, ratings }) {
                   <td className={`font-pixel text-[10px] px-2 py-2 ${i === 0 ? 'text-pixel-black' : 'text-pixel-dim'}`}>
                     {i + 1}
                   </td>
-                  <td className={`font-pixel text-[10px] px-2 py-2 ${i === 0 ? 'text-pixel-black' : 'text-pixel-white'}`}>
+                  <td className={`font-pixel text-[10px] px-2 py-2 ${i === 0 ? 'text-pixel-black' : 'text-white'}`}>
                     <div className="flex items-center gap-2">
                       <AvatarImg avatar={player.avatar} size="w-5 h-5" textSize="text-xs" borderClass="border-2" />
                       {player.username}
