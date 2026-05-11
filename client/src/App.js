@@ -107,7 +107,7 @@ function App() {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen relative" style={{ zIndex: 1 }}>
+    <div className="flex flex-col h-screen  overflow-hidden" style={{ zIndex: 1 }}>
       <SpaceLayer />
 
       {/* Header */}
@@ -120,7 +120,7 @@ function App() {
       </header> */}
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col relative" style={{ zIndex: 1 }}>
+      <main className="flex-1 flex flex-col relative min-h-0 overflow-hidden" style={{ zIndex: 1 }}>
         {loading ? (
           /* Loading Screen */
           <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8">
