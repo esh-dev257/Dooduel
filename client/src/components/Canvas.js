@@ -273,7 +273,7 @@ function Canvas({ disabled }) {
     <div className="flex flex-col w-full h-full">
 
       {/* Canvas area */}
-      <div className="flex-1 flex items-center justify-center p-4 md:p-6 bg-pixel-bg min-h-0">
+      <div className="flex-1 flex items-center justify-center p-4 md:p-6 min-h-0">
         <div className="border-4 border-pixel-border" style={{ boxShadow: '6px 6px 0 #000', lineHeight: 0 }}>
           <canvas
             ref={canvasRef}

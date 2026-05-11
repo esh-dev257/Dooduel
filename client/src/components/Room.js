@@ -176,7 +176,7 @@ function Room({ initialState, socketId, onLeave }) {
     return (
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Header */}
-        <header className="h-14 bg-pixel-bgdark border-b-4 border-pixel-border flex items-center justify-between px-4 flex-shrink-0" style={{ boxShadow: '0 4px 0 #000', zIndex: 10 }}>
+        <header className="relative h-14 bg-pixel-bgdark border-b-4 border-pixel-border flex items-center justify-between px-4 flex-shrink-0" style={{ boxShadow: '0 4px 0 #000', zIndex: 10 }}>
           <span className="font-pixel text-sm text-pixel-gold" style={{ textShadow: '2px 2px 0 #000' }}>
             DOO<span className="text-pixel-pink">DUEL</span>
           </span>
@@ -240,7 +240,7 @@ function Room({ initialState, socketId, onLeave }) {
       </div>
 
       {/* Header bar */}
-      <header className="h-14 bg-pixel-bgdark border-b-4 border-pixel-border flex items-center justify-between px-4 flex-shrink-0" style={{ boxShadow: '0 4px 0 #000', zIndex: 10 }}>
+      <header className="relative h-14 bg-pixel-bgdark border-b-4 border-pixel-border flex items-center justify-between px-4 flex-shrink-0" style={{ boxShadow: '0 4px 0 #000', zIndex: 10 }}>
         {/* Left: logo + leave */}
         <div className="flex items-center gap-3">
           <span className="font-pixel text-sm text-pixel-gold" style={{ textShadow: '2px 2px 0 #000' }}>

@@ -25,12 +25,12 @@ function scoreColor(score) {
   return 'text-pixel-red';
 }
 
-function scoreBarColor(score) {
-  if (score >= 8) return 'bg-pixel-green';
-  if (score >= 5) return 'bg-pixel-gold';
-  if (score >= 3) return 'bg-pixel-orange';
-  return 'bg-pixel-red';
-}
+const METRIC_COLORS = {
+  effort:       'bg-pixel-red',
+  coverage:     'bg-pixel-green',
+  colorVariety: 'bg-pixel-cyan',
+  detail:       'bg-pixel-pink',
+};
 
 function Results({ results, ratings, socketId }) {
   if (!results) {
@@ -42,7 +42,7 @@ function Results({ results, ratings, socketId }) {
     );
   }
 
-  const { winners, scores } = results;
+  const { winners, scores, voteCounts } = results;
   const scoreboard    = Object.entries(scores).sort(([, a], [, b]) => b.score - a.score);
   const ratingEntries = Object.entries(ratings || {}).sort(([, a], [, b]) => b.score - a.score);
 
@@ -99,12 +99,12 @@ function Results({ results, ratings, socketId }) {
                 >
                   {/* Name + score — always visible */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-pixel text-[8px] text-white truncate">{rating.username}</span>
-                    <span className={`font-pixel text-xs ${scoreColor(rating.score)}`}>{rating.score}/10</span>
+                    <span className={`font-pixel text-[8px] truncate ${isOwn ? 'text-pixel-bgdark' : 'text-white'}`}>{rating.username}</span>
+                    <span className={`font-pixel text-xs ${isOwn ? 'text-pixel-bgdark' : scoreColor(rating.score)}`}>{rating.score}/10</span>
                   </div>
 
                   {/* Label — always visible */}
-                  <span className={`font-pixel text-[8px] ${scoreColor(rating.score)}`}>{rating.label}</span>
+                  <span className={`font-pixel text-[8px] ${isOwn ? 'text-pixel-bgdark' : scoreColor(rating.score)}`}>{rating.label}</span>
 
                   {/* Own drawing: full breakdown */}
                   {isOwn && (
@@ -118,27 +118,29 @@ function Results({ results, ratings, socketId }) {
                         const val = rating.breakdown?.[key] ?? 0;
                         return (
                           <div key={key} className="flex flex-col gap-0.5">
-                            <span className="font-pixel text-[6px] text-pixel-dim">{label}</span>
+                            <span className="font-pixel text-[6px] text-pixel-bgdark">{label}</span>
                             <div className="w-full h-2 bg-pixel-bgdark border-2 border-pixel-border">
                               <div
-                                className={`h-full ${scoreBarColor(val)} transition-[width] duration-700`}
+                                className={`h-full ${METRIC_COLORS[key]} transition-[width] duration-700`}
                                 style={{ width: `${(val / 10) * 100}%` }}
                               />
                             </div>
                           </div>
                         );
                       })}
-                      <div className="border-t-2 border-pixel-borderAlt pt-2 text-right">
-                        <span className="font-pixel text-[10px] text-pixel-gold">
+                      <div className="border-t-2 border-pixel-bgdark pt-2 text-right">
+                        <span className="font-pixel text-[10px] text-pixel-bgdark">
                           +{Math.round(rating.score * 10)} PTS
                         </span>
                       </div>
                     </>
                   )}
 
-                  {/* Others: private notice */}
+                  {/* Others: votes received */}
                   {!isOwn && (
-                    <span className="font-pixel text-[7px] text-pixel-dim">— details private</span>
+                    <span className="font-pixel text-[7px] text-pixel-cyan">
+                      {voteCounts?.[sid] ?? 0} VOTE{(voteCounts?.[sid] ?? 0) !== 1 ? 'S' : ''} RECEIVED
+                    </span>
                   )}
                 </div>
               );

@@ -90,7 +90,7 @@ function Voting({ drawings, socketId, yourAnonId, voteInfo = { totalVotes: 0, to
           style={{ boxShadow: '4px 4px 0 #000' }}
         >
           {action.type === 'vote'
-            ? `YOU VOTED FOR DRAWING ${drawings[action.anonId]?.label || action.anonId}`
+            ? `YOU VOTED FOR DRAWING : ${drawings[action.anonId]?.label || action.anonId}`
             : 'YOU SKIPPED THIS ROUND'}
         </div>
       )}

@@ -18,7 +18,9 @@ const STARS = [
   { top: '65%', left: '55%' }, { top: '70%', left: '80%' },
   { top: '80%', left: '15%' }, { top: '88%', left: '48%' },
   { top: '92%', left: '70%' }, { top: '50%', left: '98%' },
-  { top: '38%', left: '65%' },
+  { top: '38%', left: '65%' }, { top: '25%', left: '50%' },
+  { top: '60%', left: '12%' }, { top: '74%', left: '42%' },
+  { top: '18%', left: '85%' }, { top: '85%', left: '88%' },
 ];
 
 const TWINKLE_ANIMS = [
@@ -28,9 +30,9 @@ const TWINKLE_ANIMS = [
 
 function SpaceLayer() {
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
-      {/* Clouds */}
-      <div className="absolute animate-cloud-1" style={{ top: '12%' }}>
+    <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 5 }}>
+      {/* Clouds — low opacity so they float subtly over game panels */}
+      <div className="absolute animate-cloud-1" style={{ top: '12%', opacity: 0.18 }}>
         <svg width="80" height="40" viewBox="0 0 80 40" fill="none">
           <rect x="20" y="24" width="40" height="8" fill="white"/>
           <rect x="12" y="16" width="56" height="8" fill="white"/>
@@ -39,7 +41,7 @@ function SpaceLayer() {
           <rect x="44" y="0"  width="12" height="8" fill="white"/>
         </svg>
       </div>
-      <div className="absolute animate-cloud-2" style={{ top: '55%' }}>
+      <div className="absolute animate-cloud-2" style={{ top: '55%', opacity: 0.15 }}>
         <svg width="64" height="32" viewBox="0 0 64 32" fill="none">
           <rect x="16" y="20" width="32" height="8" fill="white"/>
           <rect x="8"  y="12" width="48" height="8" fill="white"/>
@@ -47,7 +49,7 @@ function SpaceLayer() {
           <rect x="24" y="0"  width="16" height="4" fill="white"/>
         </svg>
       </div>
-      <div className="absolute animate-cloud-3" style={{ top: '30%' }}>
+      <div className="absolute animate-cloud-3" style={{ top: '30%', opacity: 0.20 }}>
         <svg width="96" height="48" viewBox="0 0 96 48" fill="none">
           <rect x="24" y="32" width="48" height="8" fill="white"/>
           <rect x="16" y="24" width="64" height="8" fill="white"/>
@@ -56,7 +58,7 @@ function SpaceLayer() {
           <rect x="32" y="0"  width="32" height="8" fill="white"/>
         </svg>
       </div>
-      <div className="absolute animate-cloud-4" style={{ top: '75%' }}>
+      <div className="absolute animate-cloud-4" style={{ top: '75%', opacity: 0.15 }}>
         <svg width="56" height="28" viewBox="0 0 56 28" fill="none">
           <rect x="12" y="16" width="32" height="8" fill="white"/>
           <rect x="4"  y="8"  width="48" height="8" fill="white"/>
@@ -69,7 +71,7 @@ function SpaceLayer() {
         <div
           key={i}
           className={`absolute w-1 h-1 bg-white ${TWINKLE_ANIMS[i % TWINKLE_ANIMS.length]}`}
-          style={{ top: s.top, left: s.left }}
+          style={{ top: s.top, left: s.left, opacity: 0.7 }}
         />
       ))}
     </div>
@@ -120,7 +122,7 @@ function App() {
       </header> */}
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col relative min-h-0 overflow-hidden" style={{ zIndex: 1 }}>
+      <main className="flex-1 flex flex-col relative min-h-0 overflow-hidden">
         {loading ? (
           /* Loading Screen */
           <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8">
