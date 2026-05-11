@@ -10,16 +10,16 @@ const EMOJI_CATEGORIES = {
 const CATEGORY_KEYS = Object.keys(EMOJI_CATEGORIES);
 
 function Chat({ roomId, socketId, players }) {
-  const [messages,    setMessages]    = useState([]);
-  const [inputText,   setInputText]   = useState('');
-  const [showEmojis,  setShowEmojis]  = useState(false);
+  const [messages,       setMessages]       = useState([]);
+  const [inputText,      setInputText]      = useState('');
+  const [showEmojis,     setShowEmojis]     = useState(false);
   const [activeCategory, setActiveCategory] = useState(CATEGORY_KEYS[0]);
-  const [isMinimized, setIsMinimized] = useState(true);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [cooldown,    setCooldown]    = useState(0);
-  const [sendDisabled,setSendDisabled]= useState(false);
-  const [chatError,   setChatError]   = useState('');
-  const [errorBorder, setErrorBorder] = useState(false);
+  const [isMinimized,    setIsMinimized]    = useState(false);
+  const [unreadCount,    setUnreadCount]    = useState(0);
+  const [cooldown,       setCooldown]       = useState(0);
+  const [sendDisabled,   setSendDisabled]   = useState(false);
+  const [chatError,      setChatError]      = useState('');
+  const [errorBorder,    setErrorBorder]    = useState(false);
 
   const messagesEndRef = useRef(null);
   const inputRef       = useRef(null);
@@ -41,13 +41,13 @@ function Chat({ roomId, socketId, players }) {
     const onPlayerLeft = ({ username }) =>
       setMessages(prev => [...prev.slice(-99), { system: true, text: `${username} left`, timestamp: Date.now() }]);
 
-    socket.on('chatMessage', onChatMessage);
+    socket.on('chatMessage',  onChatMessage);
     socket.on('playerJoined', onPlayerJoined);
-    socket.on('playerLeft', onPlayerLeft);
+    socket.on('playerLeft',   onPlayerLeft);
     return () => {
-      socket.off('chatMessage', onChatMessage);
+      socket.off('chatMessage',  onChatMessage);
       socket.off('playerJoined', onPlayerJoined);
-      socket.off('playerLeft', onPlayerLeft);
+      socket.off('playerLeft',   onPlayerLeft);
     };
   }, [isMinimized]);
 
@@ -57,11 +57,7 @@ function Chat({ roomId, socketId, players }) {
     if (cooldownRef.current) clearInterval(cooldownRef.current);
     cooldownRef.current = setInterval(() => {
       setCooldown(c => {
-        if (c <= 1) {
-          clearInterval(cooldownRef.current);
-          setSendDisabled(false);
-          return 0;
-        }
+        if (c <= 1) { clearInterval(cooldownRef.current); setSendDisabled(false); return 0; }
         return c - 1;
       });
     }, 1000);
@@ -70,7 +66,6 @@ function Chat({ roomId, socketId, players }) {
   const handleSend = useCallback(() => {
     const text = inputText.trim();
     if (!text || sendDisabled) return;
-
     socket.emit('chatMessage', { text }, (response) => {
       if (response?.error) {
         setChatError(response.error);
@@ -78,7 +73,6 @@ function Chat({ roomId, socketId, players }) {
         setTimeout(() => { setChatError(''); setErrorBorder(false); }, 3000);
       }
     });
-
     setInputText('');
     setShowEmojis(false);
     startCooldown();
@@ -94,48 +88,54 @@ function Chat({ roomId, socketId, players }) {
   }, []);
 
   const toggleMinimize = useCallback(() => {
-    setIsMinimized(prev => { if (prev) setUnreadCount(0); return !prev; });
+    setIsMinimized(prev => {
+      if (prev) setUnreadCount(0);
+      return !prev;
+    });
   }, []);
-
-  const formatTime = (ts) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
     <div
-      className="fixed bottom-0 right-0 z-40 w-full sm:w-[290px] bg-pixel-panel border-4 border-b-0 border-pixel-border flex flex-col"
-      style={{ maxHeight: isMinimized ? 'none' : '420px', boxShadow: '-4px -4px 0 #000' }}
+      className="flex flex-col bg-pixel-panel border-l-4 border-pixel-border overflow-hidden flex-shrink-0 transition-[width] duration-200"
+      style={{ width: isMinimized ? '40px' : '260px' }}
     >
-      {/* Header — always fully visible and clickable */}
-      <button
-        className="h-10 bg-pixel-bgdark border-b-4 border-pixel-border flex items-center justify-between px-3 cursor-pointer flex-shrink-0 w-full"
+      {/* Header — always visible, clicking toggles minimize */}
+      <div
+        className="h-10 flex flex-row items-center justify-between px-2 border-b-4 border-pixel-border bg-pixel-bgdark flex-shrink-0 cursor-pointer select-none"
         onClick={toggleMinimize}
       >
-        <div className="flex items-center gap-2">
-          <span className="font-pixel text-[10px] text-pixel-gold">CHAT</span>
+        {!isMinimized && (
+          <span className="font-pixel text-[9px] text-pixel-gold whitespace-nowrap">💬 CHAT</span>
+        )}
+        <div className="flex flex-row items-center gap-1 ml-auto">
           {isMinimized && unreadCount > 0 && (
-            <span className="font-pixel text-[8px] text-pixel-white bg-pixel-red border-2 border-pixel-border w-5 h-5 flex items-center justify-center"
+            <span className="bg-pixel-red border-2 border-pixel-border font-pixel text-[7px] text-white w-5 h-5 flex items-center justify-center"
               style={{ boxShadow: '2px 2px 0 #000' }}>
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
+          <span className="font-pixel text-[8px] text-pixel-dim">
+            {isMinimized ? '◀' : '▶'}
+          </span>
         </div>
-        <span className="font-pixel text-[8px] text-pixel-dim">{isMinimized ? '▲' : '▼'}</span>
-      </button>
+      </div>
 
-      {/* Body — only rendered when expanded */}
+      {/* Body — only when expanded */}
       {!isMinimized && (
         <>
           {/* Messages */}
-          <div className="overflow-y-auto p-2 flex flex-col gap-1 chat-msg-area" style={{ maxHeight: '280px' }}>
+          <div className="flex-1 overflow-y-auto flex flex-col gap-1 p-2 chat-msg-area min-h-0">
             {messages.length === 0 && (
-              <div className="font-pixel text-[8px] text-pixel-dim text-center py-8">
-                NO MESSAGES YET
+              <div className="flex flex-col items-center justify-center flex-1 gap-2 py-8">
+                <span className="text-2xl">💬</span>
+                <span className="font-pixel text-[7px] text-pixel-dim text-center">NO MESSAGES YET</span>
               </div>
             )}
             {messages.map((msg, i) => {
               if (msg.system) {
                 return (
-                  <div key={i} className="font-pixel text-[8px] text-pixel-green text-center py-0.5">
-                    {msg.text}
+                  <div key={i} className="text-center py-0.5">
+                    <span className="font-pixel text-[7px] text-pixel-green">{msg.text}</span>
                   </div>
                 );
               }
@@ -143,29 +143,27 @@ function Chat({ roomId, socketId, players }) {
               return (
                 <div
                   key={i}
-                  className={`flex flex-col border-2 px-2 py-1 max-w-[220px]
+                  className={`flex flex-col max-w-[95%] border-2 px-2 py-1
                     ${isSelf
-                      ? 'border-pixel-cyan self-end bg-pixel-bgdark'
-                      : 'border-pixel-borderAlt self-start bg-pixel-bgdark'}`}
+                      ? 'self-end border-pixel-cyan bg-pixel-bgdark'
+                      : 'self-start border-pixel-borderAlt bg-pixel-bgdark'}`}
                   style={{ boxShadow: '2px 2px 0 #000' }}
                 >
-                  <div className="flex items-center gap-1.5 mb-0.5">
+                  <div className="flex items-center gap-1 mb-0.5">
                     {msg.avatar?.url
-                      ? <div className="w-4 h-4 border border-pixel-border overflow-hidden bg-pixel-bgdark flex-shrink-0">
-                          <img src={msg.avatar.url} alt="avatar" className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
-                        </div>
+                      ? <img src={msg.avatar.url} alt="avatar" className="w-4 h-4 border border-pixel-border flex-shrink-0" style={{ imageRendering: 'pixelated' }} />
                       : <span className="w-4 h-4 border border-pixel-border flex items-center justify-center text-xs flex-shrink-0"
                           style={{ backgroundColor: msg.avatar?.color || '#444' }}>
                           {msg.avatar?.emoji || ''}
                         </span>
                     }
-                    <span className="font-pixel text-[8px] text-pixel-gold truncate flex-1">
+                    <span className={`font-pixel text-[7px] truncate flex-1 ${isSelf ? 'text-pixel-cyan' : 'text-pixel-gold'}`}>
                       {isSelf ? 'YOU' : msg.username}
                     </span>
                   </div>
-                  <p className="font-pixel text-[10px] text-pixel-white break-words m-0 leading-4">
+                  <span className="font-pixel text-[8px] text-white break-words leading-relaxed">
                     {msg.text}
-                  </p>
+                  </span>
                 </div>
               );
             })}
@@ -173,33 +171,33 @@ function Chat({ roomId, socketId, players }) {
           </div>
 
           {chatError && (
-            <div className="font-pixel text-[8px] text-pixel-white bg-pixel-red border-t-2 border-pixel-border px-2 py-1">
+            <div className="font-pixel text-[7px] text-white bg-pixel-red border-t-2 border-pixel-border px-2 py-1 flex-shrink-0">
               {chatError}
             </div>
           )}
 
           {/* Emoji picker */}
           {showEmojis && (
-            <div className="relative border-t-4 border-pixel-border bg-pixel-panel">
-              <div className="flex border-b-4 border-pixel-border">
+            <div className="border-t-4 border-pixel-border bg-pixel-bgdark flex-shrink-0">
+              <div className="flex flex-row border-b-2 border-pixel-borderAlt">
                 {CATEGORY_KEYS.map(cat => (
                   <button
                     key={cat}
-                    className={`flex-1 py-1 text-base border-r-2 border-pixel-border last:border-r-0 cursor-pointer
+                    className={`flex-1 py-1 text-base border-b-4 transition-colors duration-75
                       ${activeCategory === cat
-                        ? 'bg-pixel-bgdark border-b-4 border-b-pixel-gold'
-                        : 'bg-pixel-panel hover:bg-pixel-bgdark'}`}
+                        ? 'border-pixel-gold bg-pixel-panel'
+                        : 'border-transparent hover:border-pixel-borderAlt'}`}
                     onClick={() => setActiveCategory(cat)}
                   >
                     {cat}
                   </button>
                 ))}
               </div>
-              <div className="grid grid-cols-8 overflow-y-auto chat-msg-area" style={{ maxHeight: '120px' }}>
+              <div className="grid grid-cols-8 chat-msg-area overflow-y-auto" style={{ maxHeight: '96px' }}>
                 {EMOJI_CATEGORIES[activeCategory].map(emoji => (
                   <button
                     key={emoji}
-                    className="w-8 h-8 flex items-center justify-center text-base border-2 border-transparent hover:border-pixel-gold hover:bg-pixel-bgdark cursor-pointer"
+                    className="w-8 h-8 flex items-center justify-center text-base border-2 border-transparent hover:border-pixel-gold hover:bg-pixel-panel cursor-pointer"
                     onClick={() => handleEmojiClick(emoji)}
                   >
                     {emoji}
@@ -210,30 +208,34 @@ function Chat({ roomId, socketId, players }) {
           )}
 
           {/* Input row */}
-          <div className="flex gap-1.5 p-2 border-t-4 border-pixel-border bg-pixel-bgdark flex-shrink-0">
+          <div className="flex flex-row gap-1 p-2 border-t-4 border-pixel-border bg-pixel-bgdark flex-shrink-0">
             <button
-              className={`pixel-btn-secondary px-2 py-1 text-base flex-shrink-0 ${showEmojis ? 'border-pixel-gold' : ''}`}
-              onClick={() => setShowEmojis(prev => !prev)}
-              title="Emojis"
+              className={`border-4 px-2 py-1 text-sm transition-colors duration-75 shadow-pixel-sm
+                active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
+                ${showEmojis
+                  ? 'bg-pixel-gold border-pixel-gold text-pixel-black'
+                  : 'bg-pixel-bgdark border-pixel-border text-white hover:border-pixel-gold'}`}
+              onClick={() => setShowEmojis(s => !s)}
             >
               😊
             </button>
             <input
               ref={inputRef}
               type="text"
-              className={`pixel-input flex-1 text-[10px] py-1 ${errorBorder ? 'border-pixel-red' : ''}`}
+              className={`flex-1 bg-pixel-black border-4 font-pixel text-[8px] text-pixel-green px-2 py-1 focus:outline-none placeholder:text-pixel-dim min-w-0
+                ${errorBorder ? 'border-pixel-red' : 'border-pixel-borderAlt focus:border-pixel-gold'}`}
               placeholder="SAY SOMETHING..."
               value={inputText}
-              onChange={(e) => setInputText(e.target.value.slice(0, 200))}
+              onChange={e => setInputText(e.target.value.slice(0, 200))}
               onKeyDown={handleKeyDown}
               maxLength={200}
             />
             <button
-              className="pixel-btn px-2 py-1 text-[8px] flex-shrink-0 min-w-[48px]"
-              onClick={handleSend}
+              className="pixel-btn px-2 py-1 text-[8px] flex-shrink-0"
               disabled={sendDisabled || !inputText.trim()}
+              onClick={handleSend}
             >
-              {sendDisabled ? `${cooldown}s` : 'SEND'}
+              {sendDisabled ? `${cooldown}s` : '▶'}
             </button>
           </div>
         </>

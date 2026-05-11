@@ -5,12 +5,14 @@ const CANVAS_WIDTH  = 800;
 const CANVAS_HEIGHT = 560;
 
 const COLORS = [
-  '#000000', '#ffffff', '#ff0000', '#ff6600', '#ffcc00',
-  '#33cc33', '#0099ff', '#6633ff', '#ff33cc', '#996633',
-  '#666666', '#cccccc'
+  '#000000', '#FFFFFF', '#E83030',
+  '#FF8C00', '#FFD700', '#00C060',
+  '#44AAFF', '#9B59B6', '#FF66CC',
+  '#8B4513', '#808080', '#C0C0C0',
 ];
 
 const SIZES = [2, 4, 8, 14, 24];
+const DOT_SIZES = [4, 6, 10, 14, 20];
 
 function drawSmoothStroke(ctx, stroke, scaleX = 1, scaleY = 1) {
   const { points, color, lineWidth, type } = stroke;
@@ -69,7 +71,7 @@ function floodFill(ctx, startX, startY, fillColor, width, height) {
 
   const tolerance = 30;
   const matches = (idx) =>
-    Math.abs(data[idx] - targetR) <= tolerance &&
+    Math.abs(data[idx]   - targetR) <= tolerance &&
     Math.abs(data[idx+1] - targetG) <= tolerance &&
     Math.abs(data[idx+2] - targetB) <= tolerance &&
     Math.abs(data[idx+3] - targetA) <= tolerance;
@@ -83,11 +85,10 @@ function floodFill(ctx, startX, startY, fillColor, width, height) {
     const px = pos % width, py = (pos - px) / width;
     const idx = pos * 4;
     data[idx] = fc[0]; data[idx+1] = fc[1]; data[idx+2] = fc[2]; data[idx+3] = fc[3];
-
     const neighbors = [];
-    if (px > 0) neighbors.push(pos - 1);
-    if (px < width - 1) neighbors.push(pos + 1);
-    if (py > 0) neighbors.push(pos - width);
+    if (px > 0)          neighbors.push(pos - 1);
+    if (px < width - 1)  neighbors.push(pos + 1);
+    if (py > 0)          neighbors.push(pos - width);
     if (py < height - 1) neighbors.push(pos + width);
     for (const npos of neighbors) {
       if (!visited[npos] && matches(npos * 4)) { visited[npos] = 1; queue.push(npos); }
@@ -145,7 +146,7 @@ function Canvas({ disabled }) {
       return;
     }
 
-    isDrawing.current  = true;
+    isDrawing.current = true;
     const type = activeTool === 'eraser' ? 'erase' : 'pen';
     currentStroke.current = { points: [{ x, y }], color: colorRef.current, lineWidth: sizeRef.current, type };
 
@@ -254,43 +255,32 @@ function Canvas({ disabled }) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const opts = { passive: false };
-    canvas.addEventListener('touchstart', startStroke, opts);
-    canvas.addEventListener('touchmove', moveStroke, opts);
-    canvas.addEventListener('touchend', endStroke, opts);
-    canvas.addEventListener('touchcancel', endStroke, opts);
+    canvas.addEventListener('touchstart',  startStroke, opts);
+    canvas.addEventListener('touchmove',   moveStroke,  opts);
+    canvas.addEventListener('touchend',    endStroke,   opts);
+    canvas.addEventListener('touchcancel', endStroke,   opts);
     return () => {
-      canvas.removeEventListener('touchstart', startStroke, opts);
-      canvas.removeEventListener('touchmove', moveStroke, opts);
-      canvas.removeEventListener('touchend', endStroke, opts);
-      canvas.removeEventListener('touchcancel', endStroke, opts);
+      canvas.removeEventListener('touchstart',  startStroke, opts);
+      canvas.removeEventListener('touchmove',   moveStroke,  opts);
+      canvas.removeEventListener('touchend',    endStroke,   opts);
+      canvas.removeEventListener('touchcancel', endStroke,   opts);
     };
   }, [startStroke, moveStroke, endStroke]);
 
-  const cursorStyle = activeTool === 'eraser' ? 'cursor-cell' : activeTool === 'fill' ? 'cursor-crosshair' : 'cursor-crosshair';
-
-  const toolBtn = (tool, label) => (
-    <button
-      className={`pixel-btn-secondary w-full font-pixel text-[8px] py-1 px-1 transition-colors duration-75
-        ${activeTool === tool ? 'border-pixel-gold bg-pixel-gold text-pixel-black' : 'hover:border-pixel-cyan'}`}
-      onClick={() => setActiveTool(tool)}
-    >
-      {label}
-    </button>
-  );
-
-  const dotSize = [4, 6, 10, 14, 20];
+  const cursorStyle = activeTool === 'fill' ? 'cursor-crosshair' : activeTool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair';
 
   return (
-    <div className="flex flex-col sm:flex-row w-full h-full">
-      {/* Canvas */}
-      <div className="flex-1 flex items-center justify-center p-2">
-        <div className="border-4 border-pixel-border" style={{ boxShadow: '4px 4px 0 #000', lineHeight: 0 }}>
+    <div className="flex flex-col w-full h-full">
+
+      {/* Canvas area */}
+      <div className="flex-1 flex items-center justify-center p-4 md:p-6 bg-pixel-bg min-h-0">
+        <div className="border-4 border-pixel-border" style={{ boxShadow: '6px 6px 0 #000', lineHeight: 0 }}>
           <canvas
             ref={canvasRef}
             width={CANVAS_WIDTH}
             height={CANVAS_HEIGHT}
-            className={`block max-w-full ${cursorStyle} ${disabled ? 'opacity-70 pointer-events-none' : ''}`}
-            style={{ maxHeight: 'calc(100vh - 200px)', width: 'auto' }}
+            className={`block ${cursorStyle} ${disabled ? 'opacity-70 pointer-events-none' : ''}`}
+            style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 280px)', width: 'auto', aspectRatio: '800/560' }}
             onMouseDown={startStroke}
             onMouseMove={moveStroke}
             onMouseUp={endStroke}
@@ -299,84 +289,98 @@ function Canvas({ disabled }) {
         </div>
       </div>
 
-      {/* Toolbar */}
+      {/* Horizontal toolbar — below canvas */}
       {!disabled && (
-        <div className="w-full sm:w-[120px] flex-shrink-0 bg-pixel-panel border-t-4 sm:border-t-0 sm:border-l-4 border-pixel-border flex flex-col gap-2 p-2">
-          {/* Tools */}
-          <div className="flex sm:flex-col gap-1">
-            {toolBtn('pen',    '✏ PEN')}
-            {toolBtn('eraser', '◻ ERASE')}
-            {toolBtn('fill',   '▣ FILL')}
+        <div className="flex flex-row items-center gap-3 px-4 py-2 bg-pixel-panel border-t-4 border-pixel-border flex-wrap flex-shrink-0">
+
+          {/* Tool buttons */}
+          <div className="flex flex-row gap-2">
+            {[
+              { id: 'pen',    label: '✏ PEN'   },
+              { id: 'eraser', label: '◻ ERASE' },
+              { id: 'fill',   label: '▣ FILL'  },
+            ].map(tool => (
+              <button
+                key={tool.id}
+                className={`font-pixel text-[8px] px-3 py-2 border-4 shadow-pixel-sm
+                  transition-transform duration-75
+                  active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
+                  ${activeTool === tool.id
+                    ? 'bg-pixel-gold border-pixel-gold text-pixel-black'
+                    : 'bg-pixel-bgdark border-pixel-border text-white hover:border-pixel-gold'}`}
+                onClick={() => setActiveTool(tool.id)}
+              >
+                {tool.label}
+              </button>
+            ))}
           </div>
 
-          <div className="border-t-2 border-pixel-panelBorder" />
+          <div className="w-0.5 h-8 bg-pixel-borderAlt flex-shrink-0" />
 
-          {/* Undo / Clear */}
-          <div className="flex sm:flex-col gap-1">
-            <button className="pixel-btn-secondary w-full font-pixel text-[8px] py-1" onClick={handleUndo}>
+          {/* Undo + Clear */}
+          <div className="flex flex-row gap-2">
+            <button
+              className="font-pixel text-[8px] px-3 py-2 border-4 border-pixel-border bg-pixel-bgdark text-white shadow-pixel-sm hover:border-pixel-gold active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-transform duration-75"
+              onClick={handleUndo}
+            >
               ↩ UNDO
             </button>
-            <button className="pixel-btn-danger w-full font-pixel text-[8px] py-1" onClick={handleClear}>
+            <button
+              className="font-pixel text-[8px] px-3 py-2 border-4 border-pixel-red bg-pixel-red text-white shadow-pixel-red hover:opacity-80 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-transform duration-75"
+              onClick={handleClear}
+            >
               ✕ CLEAR
             </button>
           </div>
 
-          <div className="border-t-2 border-pixel-panelBorder" />
+          <div className="w-0.5 h-8 bg-pixel-borderAlt flex-shrink-0" />
 
-          {/* Color palette */}
-          <div className="grid grid-cols-7 sm:grid-cols-3 gap-1">
-            {COLORS.map((color) => (
+          {/* Color swatches */}
+          <div className="flex flex-row gap-1 flex-wrap">
+            {COLORS.map((color, i) => (
               <button
                 key={color}
-                className={`w-full aspect-square border-4 cursor-pointer transition-transform duration-75
+                className={`w-7 h-7 border-4 cursor-pointer transition-transform duration-75 hover:scale-110 shadow-pixel-sm
                   ${selectedColor === color && activeTool !== 'eraser'
-                    ? 'border-pixel-gold scale-110'
-                    : 'border-pixel-border hover:border-pixel-white hover:-translate-y-0.5'}`}
-                style={{
-                  backgroundColor: color,
-                  boxShadow: selectedColor === color && activeTool !== 'eraser' ? '4px 4px 0 #B8860B' : '2px 2px 0 #000',
-                }}
+                    ? 'border-pixel-gold scale-110 shadow-pixel-gold'
+                    : 'border-pixel-border'}`}
+                style={{ backgroundColor: color }}
                 onClick={() => handleColorChange(color)}
-                title={color}
+                aria-label={color}
               />
             ))}
             {/* Custom color */}
-            <div className="relative w-full aspect-square border-4 border-pixel-border cursor-pointer"
-              style={{ backgroundColor: selectedColor, boxShadow: '2px 2px 0 #000' }}>
+            <label className="w-7 h-7 border-4 border-pixel-border shadow-pixel-sm cursor-pointer flex items-center justify-center bg-pixel-bgdark hover:border-pixel-gold transition-colors duration-75 relative">
+              <span className="font-pixel text-[8px] text-white pointer-events-none">+</span>
               <input
                 type="color"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                className="absolute opacity-0 w-full h-full cursor-pointer"
                 value={selectedColor}
                 onChange={handleCustomColor}
-                title="Custom color"
               />
-              <span className="absolute inset-0 flex items-center justify-center text-[6px] font-pixel text-white pointer-events-none"
-                style={{ textShadow: '1px 1px 0 #000' }}>+</span>
-            </div>
+            </label>
           </div>
 
-          <div className="border-t-2 border-pixel-panelBorder" />
+          <div className="w-0.5 h-8 bg-pixel-borderAlt flex-shrink-0" />
 
           {/* Size picker */}
-          <div className="flex sm:flex-col gap-1">
+          <div className="flex flex-row items-center gap-1">
             {SIZES.map((size, i) => (
               <button
                 key={size}
-                className={`w-full border-4 flex items-center justify-center py-1 cursor-pointer transition-colors duration-75
+                className={`w-9 h-9 border-4 flex items-center justify-center cursor-pointer shadow-pixel-sm
+                  transition-transform duration-75
+                  active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
                   ${selectedSize === size
                     ? 'border-pixel-gold bg-pixel-bgdark'
-                    : 'border-pixel-border bg-pixel-bgdark hover:border-pixel-gold'}`}
-                style={{ minHeight: '28px' }}
+                    : 'border-pixel-border bg-pixel-panel hover:border-pixel-gold'}`}
                 onClick={() => handleSizeChange(size)}
-                title={`${size}px`}
               >
-                <span
-                  className="bg-pixel-white block"
-                  style={{ width: dotSize[i], height: dotSize[i], borderRadius: 0 }}
-                />
+                <div className="bg-white" style={{ width: DOT_SIZES[i], height: DOT_SIZES[i] }} />
               </button>
             ))}
           </div>
+
         </div>
       )}
     </div>
