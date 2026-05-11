@@ -1,445 +1,547 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import Canvas from './Canvas';
-import './GameSummary.css';
 
-const MINI_W = 280;
-const MINI_H = 196;
-const ORIGINAL_W = 800;
-const ORIGINAL_H = 560;
-const CARD_W = 600;
-const CARD_H = 800;
+const ORIGINAL_W = Canvas.CANVAS_WIDTH  || 800;
+const ORIGINAL_H = Canvas.CANVAS_HEIGHT || 560;
 
-const ACHIEVEMENT_ICONS = {
-  crown: '\u{1F451}',
-  heart: '\u{2764}\u{FE0F}',
-  palette: '\u{1F3A8}',
-  target: '\u{1F3AF}'
+// ─── Achievement definitions (matched by title from server data) ─────────────
+const ACHIEVEMENT_DEFS = [
+  { title: 'Champion',    label: 'CHAMPION',     desc: 'HIGHEST TOTAL SCORE',           badge: 'CHAMP', badgeBg: 'bg-pixel-gold',  badgeTx: 'text-pixel-black' },
+  { title: 'Fan Favorite',label: 'FAN FAVORITE', desc: 'MOST VOTES RECEIVED',           badge: 'FAV',   badgeBg: 'bg-pixel-pink',  badgeTx: 'text-pixel-black' },
+  { title: 'Picasso',     label: 'PICASSO',      desc: 'HIGHEST DRAWING QUALITY SCORE', badge: 'ART',   badgeBg: 'bg-pixel-cyan',  badgeTx: 'text-pixel-black' },
+  { title: 'Consistent',  label: 'CONSISTENT',   desc: 'MOST EVEN SCORES ACROSS ROUNDS',badge: 'PRO',   badgeBg: 'bg-pixel-green', badgeTx: 'text-pixel-black' },
+];
+
+const PLACE_STYLES = {
+  1: { border: 'border-pixel-gold',    label: '1ST', labelBg: 'bg-pixel-gold',    labelTx: 'text-pixel-black', scoreTx: 'text-pixel-gold' },
+  2: { border: 'border-[#C0C0C0]',     label: '2ND', labelBg: 'bg-[#C0C0C0]',    labelTx: 'text-pixel-black', scoreTx: 'text-[#C0C0C0]'  },
+  3: { border: 'border-pixel-orange',  label: '3RD', labelBg: 'bg-pixel-orange',  labelTx: 'text-pixel-black', scoreTx: 'text-pixel-orange'},
 };
 
-// Replay strokes using shared Canvas utilities (supports fill, erase, bezier)
-function replayStrokes(canvas, strokes, w, h) {
-  if (!canvas || !strokes) return;
-
-  const ctx = canvas.getContext('2d');
-  const scaleX = w / ORIGINAL_W;
-  const scaleY = h / ORIGINAL_H;
-
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, w, h);
-
-  for (const stroke of strokes) {
-    if (stroke.type === 'fill') {
-      Canvas.replayFill(ctx, stroke, scaleX, scaleY, w, h);
-    } else {
-      Canvas.drawSmoothStroke(ctx, stroke, scaleX, scaleY);
-    }
+// ─── Avatar rendering ─────────────────────────────────────────────────────────
+function AvatarBlock({ avatar, size, username }) {
+  if (avatar?.url) {
+    return (
+      <div className={`${size} border-4 border-pixel-border overflow-hidden bg-pixel-bgdark flex-shrink-0`}>
+        <img src={avatar.url} alt={username} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+      </div>
+    );
   }
+  return (
+    <div
+      className={`${size} border-4 border-pixel-border flex items-center justify-center flex-shrink-0`}
+      style={{ backgroundColor: avatar?.color || '#2A2D7A' }}
+    >
+      <span className="font-pixel text-[8px] text-white">{username?.[0]?.toUpperCase() || '?'}</span>
+    </div>
+  );
 }
+
+// ─── Podium card ──────────────────────────────────────────────────────────────
+function PodiumCard({ player, place, height }) {
+  if (!player) return null;
+  const s = PLACE_STYLES[place];
+  return (
+    <div
+      className={`flex flex-col items-center bg-pixel-panel border-4 ${s.border} w-44 ${height} p-3 animate-winner-pop`}
+      style={{
+        boxShadow: place === 1 ? '4px 4px 0 #B8860B' : place === 2 ? '4px 4px 0 #888' : '4px 4px 0 #B85C00',
+        animationDelay: `${(place - 1) * 0.15}s`
+      }}
+    >
+      <div className={`${s.labelBg} ${s.labelTx} font-pixel text-[10px] border-2 border-pixel-border px-3 py-1 w-full text-center mb-3`}
+        style={{ boxShadow: '2px 2px 0 #000' }}>
+        {s.label}
+      </div>
+      <div className="w-16 h-16 border-4 border-pixel-border overflow-hidden bg-pixel-bgdark mb-2 flex-shrink-0">
+        {player.avatar?.url
+          ? <img src={player.avatar.url} alt={player.username} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+          : <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: player.avatar?.color || '#2A2D7A' }}>
+              <span className="font-pixel text-[8px] text-white">{player.username?.[0]?.toUpperCase()}</span>
+            </div>
+        }
+      </div>
+      <span className="font-pixel text-[9px] text-white truncate max-w-full text-center mb-1">{player.username}</span>
+      <span className={`font-pixel text-sm ${s.scoreTx} tabular-nums`}>{player.score} PTS</span>
+    </div>
+  );
+}
+
+// ─── Mini collage canvas ──────────────────────────────────────────────────────
+const COLLAGE_W = 400;
+const COLLAGE_H = 280;
 
 function CollageCanvas({ strokes }) {
   const canvasRef = useRef(null);
-
   useEffect(() => {
-    replayStrokes(canvasRef.current, strokes, MINI_W, MINI_H);
+    const canvas = canvasRef.current;
+    if (!canvas || !strokes) return;
+    const ctx    = canvas.getContext('2d');
+    const scaleX = COLLAGE_W / ORIGINAL_W;
+    const scaleY = COLLAGE_H / ORIGINAL_H;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, COLLAGE_W, COLLAGE_H);
+    for (const stroke of strokes) {
+      if (stroke.type === 'fill') Canvas.replayFill(ctx, stroke, scaleX, scaleY, COLLAGE_W, COLLAGE_H);
+      else Canvas.drawSmoothStroke(ctx, stroke, scaleX, scaleY);
+    }
   }, [strokes]);
-
   return (
     <canvas
       ref={canvasRef}
-      width={MINI_W}
-      height={MINI_H}
-      className="collage-canvas"
+      width={COLLAGE_W}
+      height={COLLAGE_H}
+      className="block w-full border-4 border-pixel-border"
+      style={{ boxShadow: '4px 4px 0 #000' }}
     />
   );
 }
 
-function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
-  const [shareStatus, setShareStatus] = useState('');
-  const [cardStatus, setCardStatus] = useState('');
-  const collageRef = useRef(null);
-
-  const { roundHistory, finalScores, achievements } = summary;
-
-  // Sort leaderboard
-  const leaderboard = Object.entries(finalScores || {})
-    .sort(([, a], [, b]) => b.score - a.score);
-
-  // Get achievements for a player
-  const getPlayerAchievements = useCallback((playerName) => {
-    return (achievements || []).filter(a => a.playerName === playerName);
-  }, [achievements]);
-
-  // --- Share Collage (existing) ---
-  const handleShare = useCallback(async () => {
-    const container = collageRef.current;
-    if (!container) return;
-
-    const canvases = container.querySelectorAll('canvas');
-    if (canvases.length === 0) {
-      setShareStatus('No drawings to share');
-      setTimeout(() => setShareStatus(''), 2000);
-      return;
-    }
-
-    const cols = Math.min(canvases.length, 3);
-    const rows = Math.ceil(canvases.length / cols);
-    const padding = 10;
-    const headerH = 60;
-    const labelH = 30;
-    const totalW = cols * MINI_W + (cols + 1) * padding;
-    const totalH = headerH + rows * (MINI_H + labelH) + (rows + 1) * padding;
-
-    const compositeCanvas = document.createElement('canvas');
-    compositeCanvas.width = totalW;
-    compositeCanvas.height = totalH;
-    const ctx = compositeCanvas.getContext('2d');
-
-    ctx.fillStyle = '#0f0e17';
-    ctx.fillRect(0, 0, totalW, totalH);
-
-    ctx.fillStyle = '#e94560';
-    ctx.font = 'bold 28px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Dooduel - Best Drawings', totalW / 2, 40);
-
-    canvases.forEach((c, i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = padding + col * (MINI_W + padding);
-      const y = headerH + padding + row * (MINI_H + labelH + padding);
-
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fillRect(x - 2, y - 2, MINI_W + 4, MINI_H + 4);
-      ctx.drawImage(c, x, y, MINI_W, MINI_H);
-
-      const historyItem = roundHistory[i];
-      if (historyItem) {
-        ctx.fillStyle = '#e8e8e8';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(
-          `R${historyItem.round}: "${historyItem.prompt}" - ${historyItem.winnerUsername}`,
-          x + MINI_W / 2,
-          y + MINI_H + 18
-        );
+// ─── Share helpers ─────────────────────────────────────────────────────────────
+async function shareOrDownload(canvas, filename) {
+  return new Promise(resolve => {
+    canvas.toBlob(async (blob) => {
+      const file = new File([blob], filename, { type: 'image/png' });
+      try {
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'Doo-Duel Results' });
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a   = document.createElement('a');
+          a.href     = url;
+          a.download = filename;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          const url = URL.createObjectURL(blob);
+          const a   = document.createElement('a');
+          a.href     = url;
+          a.download = filename;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
       }
+      resolve();
+    }, 'image/png');
+  });
+}
+
+function drawCheckerboard(ctx, w, h) {
+  ctx.fillStyle = '#3B3FA5';
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#4A4EB5';
+  for (let y = 0; y < h; y += 20) {
+    for (let x = 0; x < w; x += 20) {
+      if (((x / 20) + (y / 20)) % 2 === 0) ctx.fillRect(x, y, 20, 20);
+    }
+  }
+}
+
+async function generatePersonalCard(player, socketId, summary, roomId) {
+  const W = 600, H = 800;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // 1. Background
+  drawCheckerboard(ctx, W, H);
+
+  // 2. Outer borders
+  ctx.strokeStyle = '#000000'; ctx.lineWidth = 8;
+  ctx.strokeRect(4, 4, W - 8, H - 8);
+  ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 4;
+  ctx.strokeRect(14, 14, W - 28, H - 28);
+
+  // 3. Header block
+  ctx.fillStyle = '#1A1A4E';
+  ctx.fillRect(14, 14, W - 28, 80);
+  ctx.strokeStyle = '#000000'; ctx.lineWidth = 4;
+  ctx.strokeRect(14, 14, W - 28, 80);
+  ctx.font = 'bold 28px "Press Start 2P", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FFD700'; ctx.fillText('DOO', 210, 62);
+  ctx.fillStyle = '#FF66CC'; ctx.fillText('DUEL', 360, 62);
+
+  // 4. Avatar
+  const avatarSize = 120, avatarX = (W - avatarSize) / 2, avatarY = 110;
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(avatarX - 4, avatarY - 4, avatarSize + 8, avatarSize + 8);
+  ctx.fillStyle = '#2A2D7A';
+  ctx.fillRect(avatarX, avatarY, avatarSize, avatarSize);
+  if (player.avatar?.url) {
+    await new Promise((resolve) => {
+      const img = new Image();
+      img.onload  = () => { ctx.drawImage(img, avatarX, avatarY, avatarSize, avatarSize); resolve(); };
+      img.onerror = resolve;
+      img.src     = player.avatar.url;
     });
+  }
 
-    try {
-      const blob = await new Promise(resolve => compositeCanvas.toBlob(resolve, 'image/png'));
-      const file = new File([blob], 'dooduel-collage.png', { type: 'image/png' });
+  // 5. Username
+  ctx.font = '18px "Press Start 2P", monospace';
+  ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center';
+  ctx.fillText((player.username || 'PLAYER').toUpperCase(), W / 2, 265);
 
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: 'Dooduel Game Results',
-          text: 'Check out our Dooduel drawings!',
-          files: [file]
-        });
-        setShareStatus('Shared!');
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'dooduel-collage.png';
-        a.click();
-        URL.revokeObjectURL(url);
-        setShareStatus('Downloaded!');
-      }
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        setShareStatus('Download failed');
-      }
+  // 6. Place + score
+  const leaderboard = Object.entries(summary.finalScores || {}).sort(([, a], [, b]) => b.score - a.score);
+  const rank = leaderboard.findIndex(([id]) => id === socketId) + 1;
+  const placeColors = { 1: '#FFD700', 2: '#C0C0C0', 3: '#FF8C00' };
+  const placeLabels = { 1: '1ST PLACE', 2: '2ND PLACE', 3: '3RD PLACE' };
+  const placeColor  = placeColors[rank] || '#8888BB';
+  const placeLabel  = placeLabels[rank] || `#${rank} PLACE`;
+
+  ctx.fillStyle = '#1A1A4E';
+  ctx.fillRect(50, 285, 500, 56);
+  ctx.strokeStyle = placeColor; ctx.lineWidth = 4;
+  ctx.strokeRect(50, 285, 500, 56);
+  ctx.font = '20px "Press Start 2P", monospace';
+  ctx.fillStyle = placeColor; ctx.textAlign = 'center';
+  ctx.fillText(placeLabel, W / 2, 322);
+  ctx.font = '14px "Press Start 2P", monospace';
+  ctx.fillStyle = '#FFD700';
+  ctx.fillText(`${player.score || 0} PTS`, W / 2, 374);
+
+  // 7. Achievements
+  const playerAchievements = (summary.achievements || [])
+    .filter(a => a.socketId === socketId)
+    .map(a => a.title.toUpperCase().replace(' ', ''));
+
+  let yOffset = 405;
+  if (playerAchievements.length > 0) {
+    ctx.font = '10px "Press Start 2P", monospace';
+    ctx.fillStyle = '#8888BB'; ctx.textAlign = 'center';
+    ctx.fillText('ACHIEVEMENTS', W / 2, yOffset);
+    yOffset += 24;
+
+    const pillColors = { CHAMPION: '#FFD700', FANFAVORITE: '#FF66CC', PICASSO: '#44AAFF', CONSISTENT: '#00C060' };
+    const pillW = 140, pillH = 32, pillGap = 10;
+    const totalPillW = playerAchievements.length * pillW + (playerAchievements.length - 1) * pillGap;
+    let px = (W - totalPillW) / 2;
+    for (const ach of playerAchievements) {
+      const pc = pillColors[ach] || '#8888BB';
+      ctx.fillStyle = pc;
+      ctx.fillRect(px, yOffset, pillW, pillH);
+      ctx.strokeStyle = '#000000'; ctx.lineWidth = 3;
+      ctx.strokeRect(px, yOffset, pillW, pillH);
+      ctx.font = '8px "Press Start 2P", monospace';
+      ctx.fillStyle = '#000000'; ctx.textAlign = 'center';
+      ctx.fillText(ach.slice(0, 10), px + pillW / 2, yOffset + pillH / 2 + 3);
+      px += pillW + pillGap;
     }
-    setTimeout(() => setShareStatus(''), 3000);
-  }, [roundHistory]);
+    yOffset += pillH + 16;
+  }
 
-  // --- Personal Achievement Card ---
-  const generatePersonalCard = useCallback(() => {
-    const myEntry = leaderboard.find(([id]) => id === socketId);
-    if (!myEntry) return null;
-
-    const [, myData] = myEntry;
-    const myRank = leaderboard.findIndex(([id]) => id === socketId) + 1;
-    const myAchievements = getPlayerAchievements(myData.username);
-    const myWins = (roundHistory || []).filter(r => r.winnerSocketId === socketId);
-
-    const canvas = document.createElement('canvas');
-    canvas.width = CARD_W;
-    canvas.height = CARD_H;
-    const ctx = canvas.getContext('2d');
-
-    // Background gradient
-    const grad = ctx.createLinearGradient(0, 0, 0, CARD_H);
-    grad.addColorStop(0, '#1a1a2e');
-    grad.addColorStop(1, '#0f0e17');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, CARD_W, CARD_H);
-
-    // Border
-    ctx.strokeStyle = '#e94560';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(28, 8);
-    ctx.lineTo(CARD_W - 28, 8);
-    ctx.arcTo(CARD_W - 8, 8, CARD_W - 8, 28, 20);
-    ctx.lineTo(CARD_W - 8, CARD_H - 28);
-    ctx.arcTo(CARD_W - 8, CARD_H - 8, CARD_W - 28, CARD_H - 8, 20);
-    ctx.lineTo(28, CARD_H - 8);
-    ctx.arcTo(8, CARD_H - 8, 8, CARD_H - 28, 20);
-    ctx.lineTo(8, 28);
-    ctx.arcTo(8, 8, 28, 8, 20);
-    ctx.closePath();
-    ctx.stroke();
-
-    // Header
-    ctx.fillStyle = '#e94560';
-    ctx.font = 'bold 36px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Dooduel', CARD_W / 2, 55);
-
-    // Avatar circle
-    const avatarCX = CARD_W / 2;
-    const avatarCY = 115;
-    const avatarR = 40;
-    ctx.beginPath();
-    ctx.arc(avatarCX, avatarCY, avatarR, 0, Math.PI * 2);
-    ctx.fillStyle = myData.avatar?.color || '#444';
-    ctx.fill();
-    ctx.font = '36px sans-serif';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(myData.avatar?.emoji || '\u{1F464}', avatarCX, avatarCY);
-    ctx.textBaseline = 'alphabetic';
-
-    // Username
-    ctx.fillStyle = '#e8e8e8';
-    ctx.font = 'bold 28px sans-serif';
-    ctx.fillText(myData.username, CARD_W / 2, 185);
-
-    // Rank
-    const rankLabels = ['1st', '2nd', '3rd'];
-    const rankText = myRank <= 3 ? rankLabels[myRank - 1] + ' Place' : `#${myRank}`;
-    const rankMedals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
-    const rankPrefix = myRank <= 3 ? rankMedals[myRank - 1] + ' ' : '';
-    ctx.fillStyle = '#ffcc00';
-    ctx.font = 'bold 22px sans-serif';
-    ctx.fillText(rankPrefix + rankText, CARD_W / 2, 220);
-
-    // Score
-    ctx.fillStyle = '#e8e8e8';
-    ctx.font = '18px sans-serif';
-    ctx.fillText(`${myData.score} points`, CARD_W / 2, 250);
-
-    // Divider
-    let yOffset = 280;
-    ctx.strokeStyle = '#16213e';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(80, yOffset - 10);
-    ctx.lineTo(CARD_W - 80, yOffset - 10);
-    ctx.stroke();
-
-    // Achievements
-    if (myAchievements.length > 0) {
-      ctx.fillStyle = '#888';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillText('ACHIEVEMENTS', CARD_W / 2, yOffset);
-      yOffset += 28;
-
-      for (const a of myAchievements) {
-        const icon = ACHIEVEMENT_ICONS[a.icon] || '';
-        ctx.fillStyle = '#e8e8e8';
-        ctx.font = '16px sans-serif';
-        ctx.fillText(`${icon} ${a.title}`, CARD_W / 2, yOffset);
-        yOffset += 28;
-      }
-    }
-
-    // Best drawing
+  // 8. Best drawing
+  const bestRound = (summary.roundHistory || []).find(r => r.winnerSocketId === socketId);
+  if (bestRound) {
+    ctx.font = '10px "Press Start 2P", monospace';
+    ctx.fillStyle = '#8888BB'; ctx.textAlign = 'center';
+    ctx.fillText('BEST DRAWING', W / 2, yOffset);
     yOffset += 16;
-    if (myWins.length > 0) {
-      ctx.fillStyle = '#888';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillText('BEST DRAWING', CARD_W / 2, yOffset);
-      yOffset += 16;
 
-      const drawX = (CARD_W - MINI_W) / 2;
-      const drawY = yOffset;
+    const drawX = 100, drawY = yOffset, drawW = 400, drawH = 180;
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(drawX, drawY, drawW, drawH);
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 4;
+    ctx.strokeRect(drawX - 4, drawY - 4, drawW + 8, drawH + 8);
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 2;
+    ctx.strokeRect(drawX, drawY, drawW, drawH);
 
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = MINI_W;
-      tempCanvas.height = MINI_H;
-      replayStrokes(tempCanvas, myWins[0].strokes, MINI_W, MINI_H);
+    const miniCanvas  = document.createElement('canvas');
+    miniCanvas.width  = ORIGINAL_W;
+    miniCanvas.height = ORIGINAL_H;
+    const miniCtx     = miniCanvas.getContext('2d');
+    miniCtx.fillStyle = '#FFFFFF';
+    miniCtx.fillRect(0, 0, ORIGINAL_W, ORIGINAL_H);
+    (bestRound.strokes || []).forEach(stroke => {
+      if (stroke.type === 'fill') Canvas.replayFill(miniCtx, stroke, 1, 1, ORIGINAL_W, ORIGINAL_H);
+      else Canvas.drawSmoothStroke(miniCtx, stroke, 1, 1);
+    });
+    ctx.drawImage(miniCanvas, drawX, drawY, drawW, drawH);
 
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fillRect(drawX - 2, drawY - 2, MINI_W + 4, MINI_H + 4);
-      ctx.drawImage(tempCanvas, drawX, drawY, MINI_W, MINI_H);
+    yOffset += drawH + 14;
+    ctx.font = '9px "Press Start 2P", monospace';
+    ctx.fillStyle = '#8888BB'; ctx.textAlign = 'center';
+    ctx.fillText(`"${bestRound.prompt}"`.toUpperCase().slice(0, 42), W / 2, yOffset);
+  }
 
-      yOffset += MINI_H + 20;
-      ctx.fillStyle = '#ffcc00';
-      ctx.font = 'bold 13px sans-serif';
-      ctx.fillText(`"${myWins[0].prompt}"`, CARD_W / 2, yOffset);
-    }
+  // 9. Footer
+  ctx.fillStyle = '#1A1A4E';
+  ctx.fillRect(14, H - 46, W - 28, 32);
+  ctx.strokeStyle = '#000000'; ctx.lineWidth = 3;
+  ctx.strokeRect(14, H - 46, W - 28, 32);
+  ctx.font = '9px "Press Start 2P", monospace';
+  ctx.fillStyle = '#8888BB'; ctx.textAlign = 'center';
+  ctx.fillText(`ROOM: ${roomId}  |  DOO-DUEL`, W / 2, H - 24);
 
-    // Footer
-    ctx.fillStyle = '#444';
-    ctx.font = '13px sans-serif';
-    ctx.fillText(`Room: ${roomId}`, CARD_W / 2, CARD_H - 24);
+  return canvas;
+}
 
-    return canvas;
-  }, [leaderboard, socketId, getPlayerAchievements, roundHistory, roomId]);
+async function generateCollage(summary, roomId) {
+  const cols   = 2;
+  const cellW  = 400, cellH = 280, cellPad = 20, labelH = 60;
+  const rounds = (summary.roundHistory || []).filter(r => r.strokes);
+  const rows   = Math.ceil(rounds.length / cols);
+  const totalW = cols * (cellW + cellPad) + cellPad;
+  const headerH = 80;
+  const totalH  = headerH + rows * (cellH + labelH + cellPad) + cellPad;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = totalW; canvas.height = totalH;
+  const ctx = canvas.getContext('2d');
+
+  drawCheckerboard(ctx, totalW, totalH);
+
+  ctx.strokeStyle = '#000000'; ctx.lineWidth = 8;
+  ctx.strokeRect(4, 4, totalW - 8, totalH - 8);
+  ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3;
+  ctx.strokeRect(12, 12, totalW - 24, totalH - 24);
+
+  ctx.fillStyle = '#1A1A4E';
+  ctx.fillRect(12, 12, totalW - 24, headerH - 12);
+  ctx.strokeStyle = '#000000'; ctx.lineWidth = 3;
+  ctx.strokeRect(12, 12, totalW - 24, headerH - 12);
+  ctx.font = '22px "Press Start 2P", monospace';
+  ctx.fillStyle = '#FFD700'; ctx.textAlign = 'center';
+  ctx.fillText('BEST DRAWINGS', totalW / 2, 58);
+
+  for (let i = 0; i < rounds.length; i++) {
+    const round = rounds[i];
+    const col   = i % cols;
+    const row   = Math.floor(i / cols);
+    const x     = cellPad + col * (cellW + cellPad);
+    const y     = headerH + row * (cellH + labelH + cellPad) + cellPad;
+
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x, y, cellW, cellH);
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 4;
+    ctx.strokeRect(x - 4, y - 4, cellW + 8, cellH + 8);
+
+    const mini     = document.createElement('canvas');
+    mini.width     = ORIGINAL_W; mini.height = ORIGINAL_H;
+    const mCtx     = mini.getContext('2d');
+    mCtx.fillStyle = '#FFFFFF';
+    mCtx.fillRect(0, 0, ORIGINAL_W, ORIGINAL_H);
+    (round.strokes || []).forEach(s => {
+      if (s.type === 'fill') Canvas.replayFill(mCtx, s, 1, 1, ORIGINAL_W, ORIGINAL_H);
+      else Canvas.drawSmoothStroke(mCtx, s, 1, 1);
+    });
+    ctx.drawImage(mini, x, y, cellW, cellH);
+
+    ctx.font = '9px "Press Start 2P", monospace';
+    ctx.fillStyle = '#8888BB'; ctx.textAlign = 'left';
+    ctx.fillText(`ROUND ${round.round}`, x, y + cellH + 18);
+    ctx.font = '10px "Press Start 2P", monospace';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(`"${round.prompt}"`.toUpperCase().slice(0, 36), x, y + cellH + 36);
+    ctx.font = '9px "Press Start 2P", monospace';
+    ctx.fillStyle = '#FFD700';
+    ctx.fillText((round.winnerUsername || '').toUpperCase(), x, y + cellH + 54);
+  }
+
+  return canvas;
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
+  const [sharing, setSharing] = useState(false);
+
+  const { roundHistory = [], finalScores = {}, achievements = [] } = summary;
+
+  const leaderboard = Object.entries(finalScores).sort(([, a], [, b]) => b.score - a.score);
+  // Podium: display order 2nd | 1st | 3rd
+  const podiumDisplay = [leaderboard[1], leaderboard[0], leaderboard[2]];
+  const podiumPlaces  = [2, 1, 3];
+  const podiumHeights = ['h-44', 'h-56', 'h-36'];
 
   const handleShareCard = useCallback(async () => {
-    const canvas = generatePersonalCard();
-    if (!canvas) {
-      setCardStatus('Could not generate card');
-      setTimeout(() => setCardStatus(''), 2000);
-      return;
-    }
-
+    setSharing(true);
     try {
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-      const file = new File([blob], 'dooduel-achievement.png', { type: 'image/png' });
-
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: 'My Dooduel Achievement',
-          text: 'I played Dooduel! Check out my results!',
-          files: [file]
-        });
-        setCardStatus('Shared!');
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'dooduel-achievement.png';
-        a.click();
-        URL.revokeObjectURL(url);
-        setCardStatus('Downloaded!');
-      }
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        setCardStatus('Download failed');
-      }
+      const myEntry = leaderboard.find(([id]) => id === socketId);
+      const myPlayer = myEntry ? myEntry[1] : { username: 'PLAYER', score: 0, avatar: null };
+      const canvas = await generatePersonalCard(myPlayer, socketId, summary, roomId);
+      await shareOrDownload(canvas, `dooduel-${(myPlayer.username || 'player').toLowerCase()}.png`);
+    } finally {
+      setSharing(false);
     }
-    setTimeout(() => setCardStatus(''), 3000);
-  }, [generatePersonalCard]);
+  }, [leaderboard, socketId, summary, roomId]);
+
+  const handleShareCollage = useCallback(async () => {
+    setSharing(true);
+    try {
+      const canvas = await generateCollage(summary, roomId);
+      await shareOrDownload(canvas, `dooduel-collage-${roomId}.png`);
+    } finally {
+      setSharing(false);
+    }
+  }, [summary, roomId]);
 
   return (
-    <div className="game-summary">
-      <h1 className="summary-title">Game Over!</h1>
+    <div className="overflow-y-auto">
+      <div className="max-w-5xl mx-auto px-8 py-4">
 
-      {/* Final Leaderboard */}
-      <div className="final-leaderboard">
-        <h2>Final Standings</h2>
-        <div className="podium">
-          {leaderboard.slice(0, 3).map(([, player], i) => {
-            const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
-            const playerAchievements = getPlayerAchievements(player.username);
+        {/* Title */}
+        <div className="text-center py-6">
+          <h1 className="font-pixel text-3xl text-pixel-gold" style={{ textShadow: '4px 4px 0 #B8860B' }}>
+            GAME&nbsp;&nbsp;OVER!
+          </h1>
+        </div>
+
+        {/* ── Final Standings ── */}
+        <h2 className="font-pixel text-sm text-pixel-gold pb-10">
+          FINAL STANDINGS
+        </h2>
+
+        <div className="flex flex-row items-end justify-center gap-4 mb-8">
+          {podiumDisplay.map((entry, i) => {
+            if (!entry) return <div key={i} className="w-44" />;
+            const [, player] = entry;
             return (
-              <div key={player.username} className={`podium-place place-${i + 1}`}>
+              <PodiumCard
+                key={i}
+                player={player}
+                place={podiumPlaces[i]}
+                height={podiumHeights[i]}
+              />
+            );
+          })}
+        </div>
+
+        {/* Rest of standings (4th+) */}
+        {leaderboard.length > 3 && (
+          <div className="border-4 border-pixel-border mb-8" style={{ boxShadow: '4px 4px 0 #000' }}>
+            <table className="w-full border-collapse">
+              <tbody>
+                {leaderboard.slice(3).map(([id, player], i) => (
+                  <tr key={id} className="border-t-2 border-pixel-borderAlt bg-pixel-panel hover:bg-pixel-bgdark">
+                    <td className="font-pixel text-[10px] text-pixel-dim px-3 py-2">{i + 4}</td>
+                    <td className="font-pixel text-[10px] text-white px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 border-2 border-pixel-border overflow-hidden bg-pixel-bgdark flex-shrink-0">
+                          {player.avatar?.url
+                            ? <img src={player.avatar.url} alt={player.username} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+                            : <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: player.avatar?.color || '#2A2D7A' }}>
+                                <span className="font-pixel text-[6px] text-white">{player.username?.[0]?.toUpperCase()}</span>
+                              </div>
+                          }
+                        </div>
+                        {player.username}
+                      </div>
+                    </td>
+                    <td className="font-pixel text-[10px] text-pixel-gold px-3 py-2 text-right">{player.score}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ── Achievements ── */}
+        <h2 className="font-pixel text-sm text-pixel-gold pb-10">
+          ACHIEVEMENTS
+        </h2>
+
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          {ACHIEVEMENT_DEFS.map((def) => {
+            const winner = achievements.find(a => a.title === def.title);
+            const isUnlocked = !!winner;
+
+            return (
+              <div
+                key={def.title}
+                className={`flex flex-row items-center gap-4 border-4 p-4
+                  ${isUnlocked ? 'bg-pixel-panel border-pixel-gold' : 'bg-pixel-bgdark border-pixel-borderAlt opacity-50'}`}
+                style={{ boxShadow: isUnlocked ? '4px 4px 0 #B8860B' : '4px 4px 0 #000' }}
+              >
+                {/* Badge */}
                 <div
-                  className="podium-avatar"
-                  style={{ backgroundColor: player.avatar?.color || '#444' }}
+                  className={`font-pixel text-[9px] border-4 border-pixel-border px-2 py-2 text-center flex-shrink-0 w-16
+                    ${isUnlocked ? `${def.badgeBg} ${def.badgeTx}` : 'bg-pixel-bgdark text-pixel-dim'}`}
+                  style={{ boxShadow: '2px 2px 0 #000' }}
                 >
-                  <span className="podium-avatar-emoji">
-                    {player.avatar?.emoji || '\u{1F464}'}
-                  </span>
+                  {def.badge}
                 </div>
-                <span className="podium-medal">{medals[i]}</span>
-                <span className="podium-name">{player.username}</span>
-                <span className="podium-score">{player.score} pts</span>
-                {playerAchievements.length > 0 && (
-                  <div className="podium-achievements">
-                    {playerAchievements.map((a, j) => (
-                      <span key={j} className="achievement-badge" title={a.title}>
-                        {ACHIEVEMENT_ICONS[a.icon] || ''} {a.title}
-                      </span>
-                    ))}
-                  </div>
-                )}
+
+                {/* Text */}
+                <div className="flex flex-col gap-2 min-w-0 flex-1">
+                  <span className={`font-pixel text-[11px] leading-tight ${isUnlocked ? 'text-pixel-gold' : 'text-pixel-dim'}`}>
+                    {def.label}
+                  </span>
+                  <span className="font-pixel text-[8px] text-pixel-dim leading-relaxed">
+                    {def.desc}
+                  </span>
+
+                  {isUnlocked && (
+                    <div className="flex flex-row items-center gap-2 mt-1">
+                      <div className="w-8 h-8 border-2 border-pixel-border overflow-hidden bg-pixel-bgdark flex-shrink-0">
+                        {winner.avatar?.url
+                          ? <img src={winner.avatar.url} alt={winner.playerName} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+                          : <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: winner.avatar?.color || '#2A2D7A' }}>
+                              <span className="font-pixel text-[7px] text-white">{winner.playerName?.[0]?.toUpperCase()}</span>
+                            </div>
+                        }
+                      </div>
+                      <span className="font-pixel text-[10px] text-white truncate">{winner.playerName}</span>
+                    </div>
+                  )}
+
+                  {!isUnlocked && (
+                    <span className="font-pixel text-[8px] text-pixel-dim">NOT AWARDED</span>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
-        {leaderboard.length > 3 && (
-          <table className="rest-standings">
-            <tbody>
-              {leaderboard.slice(3).map(([, player], i) => (
-                <tr key={player.username}>
-                  <td>{i + 4}</td>
-                  <td>
-                    <span
-                      className="rest-avatar"
-                      style={{ backgroundColor: player.avatar?.color || '#444' }}
-                    >
-                      {player.avatar?.emoji || ''}
-                    </span>
-                    {player.username}
-                  </td>
-                  <td>{player.score}</td>
-                </tr>
+
+        {/* ── Best Drawings ── */}
+        {roundHistory.length > 0 && (
+          <>
+            <h2 className="font-pixel text-sm text-pixel-gold pb-10">
+              BEST DRAWINGS
+            </h2>
+
+            <div className="grid grid-cols-2 gap-6 mb-8">
+              {roundHistory.map((round, i) => (
+                <div key={i} className="flex flex-col gap-2">
+                  <div className="border-4 border-pixel-border bg-white overflow-hidden" style={{ boxShadow: '4px 4px 0 #000' }}>
+                    <CollageCanvas strokes={round.strokes} />
+                  </div>
+                  <div className="flex flex-col gap-1 px-1">
+                    <span className="font-pixel text-[8px] text-pixel-dim">ROUND {round.round}</span>
+                    <span className="font-pixel text-[10px] text-white leading-snug">"{round.prompt}"</span>
+                    <span className="font-pixel text-[9px] text-pixel-gold">{round.winnerUsername}</span>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
-      </div>
 
-      {/* Achievements */}
-      {achievements && achievements.length > 0 && (
-        <div className="achievements-section">
-          <h2>Achievements</h2>
-          <div className="achievements-grid">
-            {achievements.map((a, i) => (
-              <div key={i} className="achievement-card">
-                <div
-                  className="achievement-avatar"
-                  style={{ backgroundColor: a.avatar?.color || '#444' }}
-                >
-                  {a.avatar?.emoji || ''}
-                </div>
-                <span className="achievement-icon">{ACHIEVEMENT_ICONS[a.icon] || ''}</span>
-                <div className="achievement-info">
-                  <span className="achievement-title">{a.title}</span>
-                  <span className="achievement-player">{a.playerName}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* ── Action Buttons ── */}
+        <div className="flex flex-row gap-4 justify-center py-6 flex-wrap">
+          <button
+            className="pixel-btn px-8 py-3 text-[10px]"
+            onClick={handleShareCard}
+            disabled={sharing}
+          >
+            {sharing ? '...' : 'SHARE MY CARD'}
+          </button>
+          <button
+            className="pixel-btn-secondary px-8 py-3 text-[10px]"
+            onClick={handleShareCollage}
+            disabled={sharing}
+          >
+            SHARE COLLAGE
+          </button>
+          <button
+            className="pixel-btn-secondary px-8 py-3 text-[10px] border-pixel-cyan text-pixel-cyan"
+            onClick={onBackToLobby}
+          >
+            BACK TO LOBBY
+          </button>
         </div>
-      )}
 
-      {/* Drawing Collage */}
-      {roundHistory && roundHistory.length > 0 && (
-        <div className="collage-section">
-          <h2>Best Drawings</h2>
-          <div className="collage-grid" ref={collageRef}>
-            {roundHistory.map((entry, i) => (
-              <div key={i} className="collage-item">
-                <CollageCanvas strokes={entry.strokes} />
-                <div className="collage-label">
-                  <span className="collage-round">Round {entry.round}</span>
-                  <span className="collage-prompt">"{entry.prompt}"</span>
-                  <span className="collage-winner">
-                    {entry.winnerAvatar?.emoji || ''} by {entry.winnerUsername}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Actions */}
-      <div className="summary-actions">
-        <button className="share-card-btn" onClick={handleShareCard}>
-          {cardStatus || 'Share My Card'}
-        </button>
-        <button className="share-collage-btn" onClick={handleShare}>
-          {shareStatus || 'Share Collage'}
-        </button>
-        <button className="back-lobby-btn" onClick={onBackToLobby}>
-          Back to Lobby
-        </button>
       </div>
     </div>
   );
