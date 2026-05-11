@@ -111,13 +111,13 @@ function App() {
       <SpaceLayer />
 
       {/* Header */}
-      <header className="relative h-11 bg-pixel-bgdark border-b-4 border-pixel-border flex items-center justify-between px-4" style={{ boxShadow: '0 4px 0 #000', zIndex: 10 }}>
+      {/* <header className="relative h-11 bg-pixel-bgdark border-b-4 border-pixel-border flex items-center justify-between px-4" style={{ boxShadow: '0 4px 0 #000', zIndex: 10 }}>
         <div className="flex items-center gap-2">
           <span className="font-pixel text-sm text-pixel-gold" style={{ textShadow: '2px 2px 0 #000' }}>
             DOO<span className="text-pixel-pink">DUEL</span>
           </span>
         </div>
-      </header>
+      </header> */}
 
       {/* Main content */}
       <main className="flex-1 flex flex-col relative" style={{ zIndex: 1 }}>

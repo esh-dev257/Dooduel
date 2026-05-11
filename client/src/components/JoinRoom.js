@@ -123,7 +123,7 @@ function JoinRoom({ onJoin }) {
 
           {/* Left — hero copy */}
           <div className="flex-1 flex flex-col gap-3">
-            <p className="font-pixel text-[11px] text-white leading-relaxed">
+            <p className="font-pixel text-[18px] text-white leading-relaxed">
               READY,<br />
               {username.trim() ? username.trim().toUpperCase() : 'PLAYER 1'}?
             </p>
@@ -136,24 +136,24 @@ function JoinRoom({ onJoin }) {
           </div>
 
           {/* Right — avatar section */}
-          <div className="flex flex-col items-center gap-2 self-center sm:self-start">
+          <div className="flex flex-row items-start gap-2 self-center sm:self-start">
 
-            {/* Dice + avatar box row — tops aligned */}
-            <div className="flex flex-row items-start gap-3">
+            {/* Dice — top-aligned with avatar box */}
+            <img
+              src="/assets/dice.png"
+              alt="Randomize avatar"
+              className={`w-8 h-8 cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity duration-75 mt-1
+                ${joining ? 'pointer-events-none opacity-40' : ''}`}
+              style={{ imageRendering: 'pixelated' }}
+              onClick={randomAvatar}
+              title="Random avatar"
+            />
 
-              {/* Dice image */}
-              <img
-                src="/assets/dice.png"
-                alt="Randomize avatar"
-                className={`w-8 h-8 cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity duration-75
-                  ${joining ? 'pointer-events-none opacity-40' : ''}`}
-                style={{ imageRendering: 'pixelated' }}
-                onClick={randomAvatar}
-                title="Random avatar"
-              />
+            {/* Avatar box + counter + arrows — all centered together */}
+            <div className="flex flex-col items-center gap-2">
 
               {/* Avatar preview box */}
-              <div className="w-28 h-28 border-4 border-pixel-border bg-pixel-bgdark overflow-hidden"
+              <div className="w-32 h-32 border-4 border-pixel-border bg-pixel-bgdark overflow-hidden"
                 style={{ boxShadow: '4px 4px 0 #000' }}>
                 <img
                   src={AVATARS[avatarIdx]}
@@ -163,33 +163,33 @@ function JoinRoom({ onJoin }) {
                   onError={e => { e.target.style.display = 'none'; }}
                 />
               </div>
-            </div>
 
-            {/* Counter */}
-            <span className="font-pixel text-[8px] text-pixel-dim">
-              {avatarIdx + 1} / {AVATARS.length}
-            </span>
+              {/* Counter */}
+              <span className="font-pixel text-[8px] text-pixel-dim">
+                {avatarIdx + 1} / {AVATARS.length}
+              </span>
 
-            {/* Arrow buttons */}
-            <div className="flex flex-row gap-4">
-              <button
-                type="button"
-                className="pixel-btn-secondary px-3 py-1 text-base"
-                onClick={prevAvatar}
-                disabled={joining}
-                aria-label="Previous avatar"
-              >
-                ←
-              </button>
-              <button
-                type="button"
-                className="pixel-btn-secondary px-3 py-1 text-base"
-                onClick={nextAvatar}
-                disabled={joining}
-                aria-label="Next avatar"
-              >
-                →
-              </button>
+              {/* Arrow buttons */}
+              <div className="flex flex-row gap-2">
+                <button
+                  type="button"
+                  className="pixel-btn-secondary px-2 py-0.5 text-sm"
+                  onClick={prevAvatar}
+                  disabled={joining}
+                  aria-label="Previous avatar"
+                >
+                  ←
+                </button>
+                <button
+                  type="button"
+                  className="pixel-btn-secondary px-2 py-0.5 text-sm"
+                  onClick={nextAvatar}
+                  disabled={joining}
+                  aria-label="Next avatar"
+                >
+                  →
+                </button>
+              </div>
             </div>
           </div>
         </div>

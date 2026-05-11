@@ -6,17 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Development
 ```bash
-# Install all dependencies (server + client)
-npm run setup
+# Install all dependencies (root + client) in one step
+npm install          # postinstall auto-runs: cd client && npm install
 
-# Run backend dev server (nodemon, port 3001)
-npm run dev
+# Run both servers simultaneously with hot reload (recommended)
+npm run dev          # Express on :3001 + React dev server on :3000 (via concurrently)
 
-# Run React frontend dev server (port 3000, proxies to 3001)
-cd client && npm start
+# Run servers individually if needed
+npm run dev:client   # React dev server only (port 3000)
 
 # Build React for production
-npm run build-client
+npm run build        # cd client && npm run build
 
 # Run production server (serves built React from client/build/)
 npm start
@@ -27,6 +27,11 @@ npm start
 curl http://localhost:3001/health
 ```
 
+### Dev workflow
+- Run `npm run dev` from the project root
+- Open **http://localhost:3000** in the browser — changes hot-reload instantly on save
+- Never use `npm run build` during development — only needed for production deploys
+
 There are no tests or linting configured in this project.
 
 ---
@@ -34,7 +39,14 @@ There are no tests or linting configured in this project.
 ## Architecture
 
 ### Two-process dev setup
-In development, two servers run simultaneously: the Express/Socket.IO backend on port 3001 and the React dev server on port 3000. The React app proxies API/socket traffic to 3001 via `client/package.json`'s `"proxy"` field. In production, Express serves the React build directly from `client/build/`.
+In development, `npm run dev` uses `concurrently` to run two servers:
+- Express/Socket.IO backend on port 3001 (`nodemon server.js`)
+- React dev server on port 3000 (`cd client && npm start`)
+
+The React app proxies API/socket traffic to 3001 via `client/package.json`'s `"proxy"` field. In production, Express serves the React build directly from `client/build/` — only one process runs.
+
+### Render deployment
+Render runs `npm install` (triggers `postinstall` → client install), then `npm run build` (builds React), then `npm start`. No manual steps. Build command: `npm run build`. Start command: `npm start`.
 
 ### Real-time state model
 There is no database. All game state lives in a single in-memory `rooms` object inside `roomManager.js`. Socket.IO is the exclusive mechanism for syncing state from server to clients — the server emits `roomUpdate` and `gameStateChange` events that drive all UI transitions in `Room.js`. Client components are purely reactive; they never mutate shared state directly.
@@ -60,15 +72,23 @@ On disconnect, `roomManager.disconnectPlayer()` soft-deletes the player and star
 - 50 bonus points for the drawing with the most votes
 - Bonus from `rateDrawing.js`: score (0–10) × 10 points, based on stroke count (effort 40%), bounding box coverage (25%), color variety (20%), and points-per-stroke detail (20%)
 
+### Avatar system
+Avatars are PNG images served from `client/public/avatar/`. 18 files named `Avatar (1).png` through `Avatar (18).png`. Referenced via public URL `/avatar/Avatar (N).png` — no import needed.
+
+The avatar object sent to the server on join is `{ emoji: '', color: '#2A2D7A', url: '/avatar/Avatar (N).png' }`. The server sanitiser (`socketHandlers.js`) preserves all three fields. All components check `avatar.url` first and render the PNG if present, falling back to `emoji`/`color` for legacy sessions.
+
+A dice image at `client/public/assets/dice.png` is used in JoinRoom as a clickable randomize button.
+
 ### Key backend files
 | File | Responsibility |
 |---|---|
 | `server.js` | Express + Socket.IO setup, static serving, graceful shutdown |
-| `socketHandlers.js` | All socket event registration, rate limiting (60 draw/s, 1 chat/s) |
+| `socketHandlers.js` | All socket event registration, rate limiting (60 draw/s, 1 chat/s), avatar sanitisation |
 | `roomManager.js` | In-memory room/player state, vote tallying, achievement calculation |
 | `gameLoop.js` | Phase timers and transition logic |
 | `rateDrawing.js` | Drawing quality scoring algorithm |
 | `prompts.js` | Tiered prompt library, repeat-prevention (last 3) |
+| `avatars.js` | Fallback emoji+color avatar assignment when no client avatar provided |
 
 ---
 
@@ -138,6 +158,20 @@ Utility classes in `@layer utilities`: `.pixel-shadow`, `.pixel-shadow-sm`, `.pi
 
 ---
 
+## Static Assets
+
+```
+client/public/
+├── avatar/
+│   ├── Avatar (1).png … Avatar (18).png   ← player avatar PNGs
+└── assets/
+    └── dice.png                            ← randomize button in JoinRoom
+```
+
+All files in `client/public/` are served as-is. Reference them with absolute paths from root: `/avatar/Avatar (1).png`, `/assets/dice.png`. No imports needed.
+
+---
+
 ## Component Reference
 
 ### `App.js`
@@ -145,20 +179,31 @@ Entry point and router. Imports `./tailwind.css`. Manages `roomState`, `socketId
 
 **`SpaceLayer` component** (inline in App.js): 4 pixel SVG clouds with staggered `animate-cloud-*` + 15 twinkling `animate-twinkle-*` star divs. Fixed, `pointer-events-none`, `z-index: 0`.
 
-**Loading screen**: Animated gold bar (`animate-load-bar`), cycles 5 messages every 560ms (`animate-blink-step`), pixel tip box.
+**Loading screen**: Animated gold bar (`animate-load-bar`), cycles messages every 560ms (`animate-blink-step`). No tip box currently.
 
-**Header**: `h-11 bg-pixel-bgdark border-b-4 border-pixel-border` — DOO in `text-pixel-gold`, DUEL in `text-pixel-pink`.
+**Header**: Commented out — no persistent header bar. The DOODUEL title appears inside JoinRoom only (above the card).
 
 ---
 
 ### `JoinRoom.js`
 Login screen. No separate CSS file — pure Tailwind. State: `username`, `roomId`, `error`, `joining`, `avatarIdx`, `shake`.
 
-**Avatar picker**: 6 avatars (`AVATARS` array with `emoji` + `color`). Grid of `aspect-square border-4` buttons. Active: `border-pixel-gold scale-110`. Selected avatar previewed in `w-20 h-20` box with `backgroundColor: selectedAvatar.color`.
+**Layout**: `flex-col items-center justify-center` — DOODUEL title rendered above the card, outside it.
+
+**Title** (outside card): DOO in `text-pixel-gold` + DUEL in `text-pixel-pink`, `text-3xl`, hard text-shadows.
+
+**Avatar carousel**: 18 PNG avatars from `/avatar/Avatar (N).png`, built as `AVATARS` array via `Array.from`. No imports — public folder URLs.
+- Dice image (`/assets/dice.png`, `w-8 h-8`) sits to the left of the avatar box, top-aligned via `items-start`. Clicking it randomizes `avatarIdx`.
+- Avatar preview box: `w-32 h-32 border-4`, PNG rendered with `imageRendering: pixelated`
+- Counter below box: `{avatarIdx + 1} / 18`
+- Arrow buttons below counter: `pixel-btn-secondary px-2 py-0.5 text-sm`, centered under avatar box (not under dice)
+- Dice and avatar column are siblings in a `flex-row items-start` row so arrows stay centered under the avatar
 
 **Live name hero**: `{username.trim() ? username.trim().toUpperCase() : 'PLAYER 1'}?` — updates in real time as user types.
 
-**Name limit**: 10 characters max — `onChange={(e) => setUsername(e.target.value.slice(0, 10))}` + `maxLength={10}`.
+**Name limit**: 16 characters max with inline counter (`{n}/16` shown when `username.length > 0`).
+
+**Room code**: 4 characters max, forced uppercase via `onChange`.
 
 **Persistence**: Saves `username` + `avatarIdx` to `localStorage` key `dooduel_stats`.
 
@@ -166,7 +211,9 @@ Login screen. No separate CSS file — pure Tailwind. State: `username`, `roomId
 
 **Error state**: `animate-shake` class toggled via `shake` state (resets after 400ms) on the card wrapper.
 
-**Buttons**: `.pixel-btn` (JOIN GAME), `.pixel-btn-secondary` (CREATE PRIVATE ROOM — generates 4-char alphanumeric code).
+**Join logic**: Two handlers — `handleJoin` (requires existing room code) and `handleCreate` (generates 4-char code then joins). Both call `doJoin(roomCode)`. Avatar sent as `{ emoji: '', color: '#2A2D7A', url: '/avatar/Avatar (N).png' }`.
+
+**Buttons**: `.pixel-btn` (JOIN GAME), `.pixel-btn-secondary` (CREATE ROOM).
 
 ---
 
@@ -190,7 +237,7 @@ Main game container. Pure Tailwind. The most complex component.
 | `voteInfo` | object | `{totalVotes, totalPlayers}` |
 | `gameSummary` | object | Final summary for GameSummary component |
 | `phaseKey` | number | Incremented to trigger `animate-phase-slide` |
-| `toasts` | array | `{id, text, type}` — auto-dismiss after 3s |
+| `toasts` | array | `{id, text, type, avatar}` — auto-dismiss after 3s |
 | `disconnected` | bool | Socket connection state |
 | `floatingReactions` | array | `{id, emoji, x}` — float upward 2s |
 
@@ -204,11 +251,11 @@ Main game container. Pure Tailwind. The most complex component.
 - `GAME_OVER`: `<GameSummary>` component
 
 **Overlays**:
-- Toast notifications: fixed top-center — green for join, red for leave, `animate-phase-slide`
+- Toast notifications: fixed top-center — green for join, red for leave, `animate-phase-slide`. Avatar rendered as PNG if `toast.avatar.url` exists.
 - Reconnect banner: fixed top, red bg, blinking dot (`animate-blink`)
 - Floating reactions: fixed bottom, `animate-float-up` per emoji
 
-**Difficulty badge colors**: Easy = `bg-pixel-green`, Medium = `bg-pixel-orange`, Hard = `bg-pixel-red`
+**Difficulty badge colors**: Easy = `bg-pixel-green`, Medium = `bg-pixel-gold`, Hard = `bg-pixel-red`
 
 ---
 
@@ -261,6 +308,8 @@ Displays anonymous drawings for voting. Pure Tailwind. State: `votedFor` (anonId
 ### `Results.js`
 Display-only. Pure Tailwind. Props: `results` (`{winners, scores}`), `ratings` (`{socketId: {username, score, label, breakdown}}`).
 
+**Avatar rendering**: `AvatarImg` helper component (defined locally) — renders PNG if `avatar.url` exists, falls back to emoji+color square.
+
 **Sections**:
 1. **Winner cards**: `animate-winner-pop`, `border-pixel-gold`, `shadow-pixel-gold`
 2. **Rating cards**: Color-coded score badge + label + 4 breakdown bars
@@ -273,13 +322,15 @@ Display-only. Pure Tailwind. Props: `results` (`{winners, scores}`), `ratings` (
 ### `GameSummary.js`
 End-of-game screen. Pure Tailwind. Props: `summary` (`{roundHistory, finalScores, achievements}`), `roomId`, `socketId`, `onBackToLobby`.
 
+**Avatar rendering**: `AvatarImg` helper component (defined locally) — PNG-first with emoji fallback. Used in podium, standings table, and achievements grid.
+
 **Sections**:
 1. **Podium**: 2nd | 1st | 3rd display order (center tallest), staggered `animate-winner-pop`, medal border colors
 2. **Achievements grid**: 2-column, `.pixel-card-light`, Champion / Fan Favorite / Picasso / Consistent badges
 3. **Best Drawings collage**: `CollageCanvas` component using `Canvas.drawSmoothStroke()` / `Canvas.replayFill()`, labeled with round/prompt/winner
 
 **Share / download** (two actions):
-- **Personal card** (600×800px offscreen canvas): avatar, rank, score, achievements, best drawing, room code footer
+- **Personal card** (600×800px offscreen canvas): renders avatar PNG via `new Image()` async load, rank, score, achievements, best drawing, room code footer. `generatePersonalCard` is `async`.
 - **Full collage** (dynamic height): all winning drawings in 3-column grid
 - Both use `navigator.share()` with blob fallback to direct download
 
@@ -299,6 +350,8 @@ Stateless. Pure Tailwind. Props: `remaining` (seconds), `total` (seconds).
 ### `PlayerList.js`
 Stateless. Pure Tailwind. Props: `players`, `host`, `socketId`.
 
+**Avatar rendering**: `AvatarImg` helper component (defined locally) — PNG-first with emoji fallback. Size `w-7 h-7`.
+
 Sorted by score descending. Self row: `border-pixel-cyan`. HOST badge: `bg-pixel-gold text-pixel-black`. YOU badge: `bg-pixel-cyan text-pixel-black`. Empty state: ghost emoji + "NO PLAYERS YET".
 
 ---
@@ -307,6 +360,8 @@ Sorted by score descending. Self row: `border-pixel-cyan`. HOST badge: `bg-pixel
 Fixed panel, bottom-right on desktop / full-width on mobile. Pure Tailwind. State: `messages` (max 100), `inputText`, `showEmojis`, `activeCategory`, `isMinimized`, `unreadCount`, `sendDisabled`, `cooldown`, `chatError`, `errorBorder`.
 
 **Socket events**: listens `chatMessage`, `playerJoined`, `playerLeft`; emits `chatMessage`
+
+**Avatar rendering**: inline PNG-first conditional — `msg.avatar?.url` renders `<img>`, otherwise emoji+color `<span>`. Size `w-4 h-4`.
 
 **Minimize behavior**: Outer container is always full-size. All body content (messages, emoji picker, input) is wrapped in `{!isMinimized && (<>...</>)}` — React conditional rendering, not CSS height. Header (`h-10`) is always rendered.
 
