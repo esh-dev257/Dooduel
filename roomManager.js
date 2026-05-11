@@ -520,6 +520,18 @@ function calculateAchievements(roomId) {
   }
 
   // Consistent — played every round
+  for (const id of playerIds) {
+    const stats = room.playerStats[id];
+    if (stats && stats.roundsPlayed >= room.round && room.round >= 2) {
+      achievements.push({
+        title: 'Consistent',
+        icon: 'target',
+        playerName: room.players[id].username,
+        avatar: room.players[id].avatar,
+        socketId: id
+      });
+    }
+  }
 
 
   return achievements;
