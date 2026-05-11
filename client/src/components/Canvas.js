@@ -18,16 +18,14 @@ function drawSmoothStroke(ctx, stroke, scaleX = 1, scaleY = 1) {
   const { points, color, lineWidth, type } = stroke;
   if (!points || points.length === 0) return;
 
-  const prevComposite = ctx.globalCompositeOperation;
-  ctx.globalCompositeOperation = type === 'erase' ? 'destination-out' : 'source-over';
+  const strokeColor = type === 'erase' ? '#FFFFFF' : color;
   const scaledLW = lineWidth * Math.min(scaleX, scaleY);
 
   if (points.length === 1) {
-    ctx.fillStyle = type === 'erase' ? 'rgba(0,0,0,1)' : color;
+    ctx.fillStyle = strokeColor;
     ctx.beginPath();
     ctx.arc(points[0].x * scaleX, points[0].y * scaleY, scaledLW / 2, 0, Math.PI * 2);
     ctx.fill();
-    ctx.globalCompositeOperation = prevComposite;
     return;
   }
 
@@ -44,12 +42,11 @@ function drawSmoothStroke(ctx, stroke, scaleX = 1, scaleY = 1) {
     const last = points[points.length - 1];
     ctx.lineTo(last.x * scaleX, last.y * scaleY);
   }
-  ctx.strokeStyle = type === 'erase' ? 'rgba(0,0,0,1)' : color;
+  ctx.strokeStyle = strokeColor;
   ctx.lineWidth   = scaledLW;
   ctx.lineCap     = 'round';
   ctx.lineJoin    = 'round';
   ctx.stroke();
-  ctx.globalCompositeOperation = prevComposite;
 }
 
 function floodFill(ctx, startX, startY, fillColor, width, height) {
@@ -148,15 +145,13 @@ function Canvas({ disabled }) {
 
     isDrawing.current = true;
     const type = activeTool === 'eraser' ? 'erase' : 'pen';
-    currentStroke.current = { points: [{ x, y }], color: colorRef.current, lineWidth: sizeRef.current, type };
+    const strokeColor = type === 'erase' ? '#FFFFFF' : colorRef.current;
+    currentStroke.current = { points: [{ x, y }], color: strokeColor, lineWidth: sizeRef.current, type };
 
-    const prevComp = ctx.globalCompositeOperation;
-    ctx.globalCompositeOperation = type === 'erase' ? 'destination-out' : 'source-over';
-    if (type !== 'erase') ctx.fillStyle = colorRef.current;
+    ctx.fillStyle = strokeColor;
     ctx.beginPath();
     ctx.arc(x, y, sizeRef.current / 2, 0, Math.PI * 2);
     ctx.fill();
-    ctx.globalCompositeOperation = prevComp;
   }, [disabled, getCoords, getCtx, activeTool]);
 
   const moveStroke = useCallback((e) => {
@@ -169,8 +164,6 @@ function Canvas({ disabled }) {
     const points = stroke.points;
     const last   = points[points.length - 1];
 
-    const prevComp = ctx.globalCompositeOperation;
-    ctx.globalCompositeOperation = stroke.type === 'erase' ? 'destination-out' : 'source-over';
     ctx.beginPath();
     if (points.length >= 2) {
       const prev = points[points.length - 2];
@@ -182,11 +175,10 @@ function Canvas({ disabled }) {
       ctx.moveTo(last.x, last.y);
       ctx.lineTo(x, y);
     }
-    ctx.strokeStyle = stroke.type === 'erase' ? 'rgba(0,0,0,1)' : stroke.color;
+    ctx.strokeStyle = stroke.color;
     ctx.lineWidth   = stroke.lineWidth;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.stroke();
-    ctx.globalCompositeOperation = prevComp;
     points.push({ x, y });
   }, [getCoords, getCtx]);
 

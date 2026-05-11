@@ -174,7 +174,7 @@ function Room({ initialState, socketId, onLeave }) {
 
   if (gameState === 'GAME_OVER' && gameSummary) {
     return (
-      <div className="flex flex-col flex-1 overflow-hidden pb-12 lg:pb-0">
+      <div className="flex flex-col flex-1 overflow-hidden">
         {/* Header */}
         <header className="relative h-14 bg-pixel-bgdark border-b-4 border-pixel-border flex items-center justify-between px-4 flex-shrink-0" style={{ boxShadow: '0 4px 0 #000', zIndex: 10 }}>
           <span className="font-pixel text-sm text-pixel-gold" style={{ textShadow: '2px 2px 0 #000' }}>
@@ -191,7 +191,6 @@ function Room({ initialState, socketId, onLeave }) {
         <div className="flex-1 overflow-y-auto p-4">
           <GameSummary summary={gameSummary} roomId={roomId} socketId={socketId} onBackToLobby={handleBackToLobby} />
         </div>
-        <Chat roomId={roomId} socketId={socketId} players={players} />
       </div>
     );
   }
