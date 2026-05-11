@@ -180,7 +180,6 @@ function Room({ initialState, socketId, onLeave }) {
           <span className="font-pixel text-sm text-pixel-gold" style={{ textShadow: '2px 2px 0 #000' }}>
             DOO<span className="text-pixel-pink">DUEL</span>
           </span>
-          <span className="font-pixel text-[8px] text-pixel-gold">GAME OVER</span>
           <button
             className="font-pixel text-[8px] text-pixel-dim border-2 border-pixel-borderAlt px-2 py-1 hover:border-pixel-gold hover:text-white"
             onClick={handleRoomCodeCopy}

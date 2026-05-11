@@ -56,10 +56,18 @@ There is no database. All game state lives in a single in-memory `rooms` object 
 ```
 WAITING → DRAWING (90/60/45s) → VOTING (20s) → RESULT (8s) → [next round or GAME_OVER]
 ```
-Transitions fire automatically or early if all players vote. Three rounds total, each with increasing difficulty (Easy → Medium → Hard) and shorter draw time. After 3 rounds, a `gameOver` event is emitted with full stats and achievements.
+Transitions fire automatically or early if all players have voted OR skipped. Three rounds total, each with increasing difficulty (Easy → Medium → Hard) and shorter draw time. After 3 rounds, a `gameOver` event is emitted with full stats and achievements.
 
 ### Anonymization for voting
 When the DRAWING phase ends, `roomManager.getAnonymousDrawings()` shuffles drawings and assigns each a letter label (A, B, C…), storing a bidirectional mapping between `anonId` ↔ `socketId`. The `vote` event takes an `anonId`, which the server resolves internally. Clients never see real socket IDs during voting.
+
+### Voting + skip logic
+Each player can take exactly one action per voting phase: **vote** for a drawing OR **skip** (no preference). Both lock the client UI immediately. The server tracks skips in `room.skips` (a `Set`). `getVoteInfo()` returns `totalActed = votes + skips` for the progress counter. `allPlayersActed()` triggers early phase end when every active player has voted or skipped. Skips contribute zero votes — they only advance the phase.
+
+Socket events:
+- Client emits `vote { anonId }` → server calls `castAnonVote()`, responds `{ success, error }`
+- Client emits `skipVote` → server calls `recordSkip()`, no callback
+- Server emits `voteUpdate { totalVotes, totalPlayers }` after each action (totalVotes = votes + skips)
 
 ### Drawing data flow
 Strokes are sent from `Canvas.js` via `drawStroke` events as `{ points, color, lineWidth, type }` arrays. The server accumulates them in `room.drawings[socketId]`. During voting, the full stroke arrays are sent to all clients via `gameStateChange`, and each `Voting.js` card re-renders strokes onto a `<canvas>` element client-side.
@@ -83,8 +91,8 @@ A dice image at `client/public/assets/dice.png` is used in JoinRoom as a clickab
 | File | Responsibility |
 |---|---|
 | `server.js` | Express + Socket.IO setup, static serving, graceful shutdown |
-| `socketHandlers.js` | All socket event registration, rate limiting (60 draw/s, 1 chat/s), avatar sanitisation |
-| `roomManager.js` | In-memory room/player state, vote tallying, achievement calculation |
+| `socketHandlers.js` | All socket event registration, rate limiting (60 draw/s, 1 chat/s), avatar sanitisation, `vote` + `skipVote` handlers |
+| `roomManager.js` | In-memory room/player state, vote tallying, skip tracking, achievement calculation |
 | `gameLoop.js` | Phase timers and transition logic |
 | `rateDrawing.js` | Drawing quality scoring algorithm |
 | `prompts.js` | Tiered prompt library, repeat-prevention (last 3) |
@@ -152,8 +160,8 @@ Defined in `@layer components` — always prefer these over recreating the patte
 Utility classes in `@layer utilities`: `.pixel-shadow`, `.pixel-shadow-sm`, `.pixel-shadow-lg`, `.pixel-shadow-gold`, `.pixel-shadow-red`, `.pixel-shadow-cyan`, `.pixel-shadow-none`, `.pressed`, `.size-dot`
 
 ### Layout (gameplay)
-- Three-column layout during gameplay: sidebar (190px fixed) | main (flex-grow) | chat panel (290px fixed bottom-right)
-- Sidebar and chat collapse to top/bottom rows on mobile (`sm:` breakpoint)
+- True 3-column layout: `PlayerList` (200px, self-contained) | center `flex-1` | `Chat` (260px expanded / 8px minimized, self-contained)
+- Header bar (`h-14`) always visible: DOODUEL logo + LEAVE (left), Timer MM:SS + round/difficulty (center), clickable room code copy (right)
 - Phase transitions: `animate-phase-slide` on a keyed wrapper div (key = `phaseKey` counter incremented in `Room.js`)
 
 ---
@@ -179,14 +187,14 @@ Entry point and router. Imports `./tailwind.css`. Manages `roomState`, `socketId
 
 **`SpaceLayer` component** (inline in App.js): 4 pixel SVG clouds with staggered `animate-cloud-*` + 15 twinkling `animate-twinkle-*` star divs. Fixed, `pointer-events-none`, `z-index: 0`.
 
-**Loading screen**: Animated gold bar (`animate-load-bar`), cycles messages every 560ms (`animate-blink-step`). No tip box currently.
+**Loading screen**: Animated gold bar (`animate-load-bar`), cycles messages every 560ms (`animate-blink-step`).
 
-**Header**: Commented out — no persistent header bar. The DOODUEL title appears inside JoinRoom only (above the card).
+**Header**: Commented out — no persistent header bar in App.js. The DOODUEL title appears in JoinRoom (above card) and in Room.js header bar.
 
 ---
 
 ### `JoinRoom.js`
-Login screen. No separate CSS file — pure Tailwind. State: `username`, `roomId`, `error`, `joining`, `avatarIdx`, `shake`.
+Login screen. Pure Tailwind. State: `username`, `roomId`, `error`, `joining`, `avatarIdx`, `shake`.
 
 **Layout**: `flex-col items-center justify-center` — DOODUEL title rendered above the card, outside it.
 
@@ -220,7 +228,14 @@ Login screen. No separate CSS file — pure Tailwind. State: `username`, `roomId
 ### `Room.js`
 Main game container. Pure Tailwind. The most complex component.
 
-**State** (13+ variables):
+**Layout**: `flex-col` with a fixed `h-14` header bar, then a `flex-row flex-1` body containing `PlayerList` | center section | `Chat`.
+
+**Header bar** (`h-14 bg-pixel-bgdark`):
+- Left: DOODUEL logo + LEAVE button
+- Center: `<Timer>` (MM:SS) when active, round number + difficulty badge below
+- Right: clickable room code — copies to clipboard, shows `✓ COPIED` for 2s
+
+**State** (15+ variables):
 | Variable | Type | Purpose |
 |---|---|---|
 | `players` | object | `{socketId: {username, avatar, score}}` |
@@ -234,25 +249,25 @@ Main game container. Pure Tailwind. The most complex component.
 | `yourAnonId` | string | Player's anonymous ID during voting |
 | `results` | object | `{winners, scores}` |
 | `ratings` | object | Drawing quality data per player |
-| `voteInfo` | object | `{totalVotes, totalPlayers}` |
+| `voteInfo` | object | `{totalVotes, totalPlayers}` — votes + skips combined |
 | `gameSummary` | object | Final summary for GameSummary component |
 | `phaseKey` | number | Incremented to trigger `animate-phase-slide` |
-| `toasts` | array | `{id, text, type, avatar}` — auto-dismiss after 3s |
+| `toasts` | array | `{id, message, type, avatar}` — auto-dismiss after 3s |
 | `disconnected` | bool | Socket connection state |
-| `floatingReactions` | array | `{id, emoji, x}` — float upward 2s |
+| `roomCodeCopied` | bool | Header room code copy feedback |
 
 **Socket events listened**: `roomUpdate`, `gameStateChange`, `timerTick`, `voteUpdate`, `gameError`, `gameOver`, `playerJoined`, `playerLeft`, `disconnect`, `connect`
 
 **Phase-specific JSX** (all keyed to `phaseKey`, wrapped with `animate-phase-slide`):
 - `WAITING`: Round info cards (Easy/Medium/Hard), Start Game button (host only, ≥2 players), invite link
-- `DRAWING`: Prompt banner with left gold border + difficulty badge, then `<Canvas>`
-- `VOTING`: Vote progress counter, `<Voting>` component
-- `RESULT`: `<Results>` component + next-round hint
-- `GAME_OVER`: `<GameSummary>` component
+- `DRAWING`: Prompt banner (gold left border + difficulty badge), then `<Canvas>`
+- `VOTING`: `<Voting voteInfo={voteInfo} .../>` — vote counter lives inside Voting component
+- `RESULT`: `<Results socketId={socketId} .../>` + next-round hint
+- `GAME_OVER`: Full-screen with header + `<GameSummary>`
 
 **Overlays**:
-- Toast notifications: fixed top-center — green for join, red for leave, `animate-phase-slide`. Avatar rendered as PNG if `toast.avatar.url` exists.
-- Reconnect banner: fixed top, red bg, blinking dot (`animate-blink`)
+- Toast notifications: fixed `top-16` (below header) center — green for join, red for leave, `animate-phase-slide`
+- Reconnect banner: fixed `top-0 z-50`, red bg, blinking dot
 - Floating reactions: fixed bottom, `animate-float-up` per emoji
 
 **Difficulty badge colors**: Easy = `bg-pixel-green`, Medium = `bg-pixel-gold`, Hard = `bg-pixel-red`
@@ -261,6 +276,8 @@ Main game container. Pure Tailwind. The most complex component.
 
 ### `Canvas.js`
 HTML5 drawing tool. Pure Tailwind. Canvas resolution always **800×560**; scales to viewport via CSS `aspect-ratio`.
+
+**Layout**: `flex-col` — canvas area on top (`flex-1`), horizontal toolbar below.
 
 **State**: `selectedColor` (hex), `selectedSize` (2/4/8/14/24), `activeTool` (`pen|eraser|fill`)
 
@@ -284,37 +301,52 @@ HTML5 drawing tool. Pure Tailwind. Canvas resolution always **800×560**; scales
 - `Canvas.replayFill(ctx, fillAction, scaleX, scaleY)`
 - `Canvas.CANVAS_WIDTH` = 800, `Canvas.CANVAS_HEIGHT` = 560
 
-**Toolbar**: `bg-pixel-panel` 120px right column. Tool buttons — active = `border-pixel-gold bg-pixel-gold text-pixel-black`. Color swatches — active = `border-pixel-gold scale-110`. Size picker — 5 buttons with `.size-dot` inside. On mobile, toolbar moves below canvas.
+**Horizontal toolbar** (below canvas): tool buttons | divider | undo + clear | divider | 12 color swatches + custom color picker | divider | 5 size buttons. Active tool: `border-pixel-gold bg-pixel-gold text-pixel-black`. Active color: `border-pixel-gold scale-110`.
 
-**Color palette**: 12 preset hex colors + custom `<input type="color">`.
+**Color palette**: `['#000000','#FFFFFF','#E83030','#FF8C00','#FFD700','#00C060','#44AAFF','#9B59B6','#FF66CC','#8B4513','#808080','#C0C0C0']` + custom `<input type="color">`.
 
 ---
 
 ### `Voting.js`
-Displays anonymous drawings for voting. Pure Tailwind. State: `votedFor` (anonId), `voteError`.
+Displays anonymous drawings for voting. Pure Tailwind.
 
-**Props**: `drawings` (`{anonId: {label, strokes}}`), `socketId`, `yourAnonId`
+**Props**: `drawings` (`{anonId: {label, strokes}}`), `socketId`, `yourAnonId`, `voteInfo` (`{totalVotes, totalPlayers}`)
 
-**`MiniCanvas`** (internal component): Replays strokes at **360×252** (45% scale). `scaleX = 360/800`, `scaleY = 252/560`. Uses `Canvas.drawSmoothStroke()` and `Canvas.replayFill()`.
+**State**: `action` (`null | { type: 'vote'|'skip', anonId }`), `locked` (bool), `voteError`
+
+**Action model**: One action per player per round — either vote for a drawing or skip. Once `locked = true`, all interactive elements are inert. Vote button hidden on own drawing (not disabled).
+
+**Handlers**:
+- `handleVote(anonId)` — emits `vote { anonId }`, awaits callback, sets action + locked on success
+- `handleSkip()` — emits `skipVote` (no callback), sets action + locked immediately
+
+**`MiniCanvas`** (internal component): Replays strokes at **360×252** (45% scale). Uses `Canvas.drawSmoothStroke()` and `Canvas.replayFill()`.
 
 **Drawing card states**:
-- Default: dark border (`border-pixel-border`)
-- Hover: `-translate-y-1 border-pixel-pink`
-- Voted: `border-pixel-green`
-- Self: `opacity-55`, "(Yours)" label, no vote button
+- Default: `border-pixel-border`, hover `-translate-y-1 border-pixel-pink`
+- Voted: `border-pixel-green`, `✓ VOTED` indicator inside
+- Locked (not voted): `opacity-70`, `—` placeholder inside
+- Self: `opacity-60 border-pixel-borderAlt`, no vote button, vertical "YOURS" label in letter strip
+
+**SKIP button**: Shown below grid only when `!locked`. Disappears after any action.
+
+**Status banner**: Shown after action — green for vote (`✓ YOU VOTED FOR DRAWING X`), dim for skip (`✓ YOU SKIPPED THIS ROUND`).
 
 ---
 
 ### `Results.js`
-Display-only. Pure Tailwind. Props: `results` (`{winners, scores}`), `ratings` (`{socketId: {username, score, label, breakdown}}`).
+Display-only. Pure Tailwind. Props: `results` (`{winners, scores}`), `ratings` (`{socketId: {username, score, label, breakdown}}`), `socketId`.
 
 **Avatar rendering**: `AvatarImg` helper component (defined locally) — renders PNG if `avatar.url` exists, falls back to emoji+color square.
 
+**Privacy rule**: Own drawing card shows full breakdown (EFFORT/COVERAGE/COLORS/DETAIL bars + `+X PTS`). Other players' cards show only score + label + "— details private". Enforced client-side by `sid === socketId`.
+
+**Own card**: `pixel-card-light border-pixel-gold shadow-pixel-gold`, wider (`minWidth: 200px`).
+**Others' cards**: `pixel-card border-pixel-borderAlt`, compact (`minWidth: 150px`).
+
 **Sections**:
 1. **Winner cards**: `animate-winner-pop`, `border-pixel-gold`, `shadow-pixel-gold`
-2. **Rating cards**: Color-coded score badge + label + 4 breakdown bars
-   - Score colors: ≥8 `bg-pixel-green`, ≥5 `bg-pixel-gold`, ≥3 `bg-pixel-orange`, <3 `bg-pixel-red`
-   - Bars: `transition-[width] duration-700` from 0 to `score%`
+2. **Rating cards**: privacy-gated breakdown (see above)
 3. **Scoreboard table**: First-place row `bg-pixel-gold text-pixel-black`
 
 ---
@@ -339,39 +371,52 @@ End-of-game screen. Pure Tailwind. Props: `summary` (`{roundHistory, finalScores
 ### `Timer.js`
 Stateless. Pure Tailwind. Props: `remaining` (seconds), `total` (seconds).
 
-**Color bands** (hard-coded, no interpolation):
-- >50% remaining: `text-pixel-green` / `bg-pixel-green`
-- >25% remaining: `text-pixel-gold` / `bg-pixel-gold`
-- ≤25% remaining: `text-pixel-red` / `bg-pixel-red`
-- ≤10s: `animate-blink-fast` on text, `animate-timer-pulse` on bar
+Outputs a single `<span>` with MM:SS formatted time. No progress bar.
+
+**Color bands**:
+- >50% remaining: `text-pixel-green`
+- >25% remaining: `text-pixel-gold`
+- ≤25% remaining: `text-pixel-red`
+- ≤10s: `animate-blink-fast`
 
 ---
 
 ### `PlayerList.js`
-Stateless. Pure Tailwind. Props: `players`, `host`, `socketId`.
+Stateless. Pure Tailwind. Props: `players`, `host`, `socketId`, `gameState`.
 
-**Avatar rendering**: `AvatarImg` helper component (defined locally) — PNG-first with emoji fallback. Size `w-7 h-7`.
+**Width**: `w-[200px] flex-shrink-0` — self-contained, no wrapper needed.
 
-Sorted by score descending. Self row: `border-pixel-cyan`. HOST badge: `bg-pixel-gold text-pixel-black`. YOU badge: `bg-pixel-cyan text-pixel-black`. Empty state: ghost emoji + "NO PLAYERS YET".
+**Sort order**: Join order in `WAITING` phase; score descending in all other phases.
+
+**Avatar rendering**: `AvatarImg` helper component (defined locally) — PNG-first with emoji fallback. Size `w-8 h-8`.
+
+**Row layout**: rank `#N` | avatar | name + score column | HOST/YOU plain text labels (right-aligned).
+- Self row: `bg-pixel-bgdark border-l-4 border-l-pixel-cyan`
+- Host row: `border-l-4 border-l-pixel-gold`
+- HOST label: `font-pixel text-[6px] text-pixel-gold`
+- YOU label: `font-pixel text-[6px] text-pixel-cyan`
+- Empty state: ghost emoji + "NO PLAYERS YET"
 
 ---
 
 ### `Chat.js`
-Fixed panel, bottom-right on desktop / full-width on mobile. Pure Tailwind. State: `messages` (max 100), `inputText`, `showEmojis`, `activeCategory`, `isMinimized`, `unreadCount`, `sendDisabled`, `cooldown`, `chatError`, `errorBorder`.
+Inline flex column in the 3-column game layout. Pure Tailwind. State: `messages` (max 100), `inputText`, `showEmojis`, `activeCategory`, `isMinimized`, `unreadCount`, `sendDisabled`, `cooldown`, `chatError`, `errorBorder`.
 
 **Socket events**: listens `chatMessage`, `playerJoined`, `playerLeft`; emits `chatMessage`
 
 **Avatar rendering**: inline PNG-first conditional — `msg.avatar?.url` renders `<img>`, otherwise emoji+color `<span>`. Size `w-4 h-4`.
 
-**Minimize behavior**: Outer container is always full-size. All body content (messages, emoji picker, input) is wrapped in `{!isMinimized && (<>...</>)}` — React conditional rendering, not CSS height. Header (`h-10`) is always rendered.
+**Width**: `w-[260px]` expanded, `w-8` minimized — `transition-[width] duration-200`.
+
+**Minimized state** (`w-8`): vertical tab — unread badge (red) at top, rotated "💬 CHAT" label (`writingMode: 'vertical-rl', transform: 'rotate(180deg)'`) in center, `▶` arrow at bottom. Clicking anywhere on the tab expands + resets unread count.
+
+**Expanded state**: header (`h-10`) with "💬 CHAT" and `◀` arrow (click to collapse), then messages, optional emoji picker, input row. All body content in `{!isMinimized && (<>...</>)}` — React conditional, not CSS.
 
 **Behaviors**:
 - Auto-scrolls to bottom on new message (`messagesEndRef`)
 - 1-second client-side cooldown between sends — button shows `${cooldown}s` countdown
-- Unread badge (red, border-2): increments when minimized, resets on expand
+- Unread badge increments when minimized, resets on expand
 - System messages (join/leave): centered, `text-pixel-green`
 - Self messages: `border-pixel-cyan self-end`; others: `border-pixel-borderAlt self-start`
 
-**Emoji picker**: 3 category tabs (`😀` / `🎮` / `✨`), each with 20 emojis in an 8-column grid. Max-height 120px.
-
-**Panel dimensions**: `w-full sm:w-[290px]`, max-height 420px when expanded. Header always 40px (`h-10`).
+**Emoji picker**: 3 category tabs (`😀` / `🎮` / `✨`), each with 20 emojis in an 8-column grid. Max-height 96px.
