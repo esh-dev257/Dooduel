@@ -291,97 +291,163 @@ function Canvas({ disabled }) {
 
       {/* Horizontal toolbar — below canvas */}
       {!disabled && (
-        <div className="flex flex-row items-center gap-3 px-4 py-2 bg-pixel-panel border-t-4 border-pixel-border flex-wrap flex-shrink-0">
+        <>
+          {/* ── DESKTOP: single row, unchanged ── */}
+          <div className="hidden lg:flex flex-row items-center gap-3 px-4 py-2 bg-pixel-panel border-t-4 border-pixel-border flex-wrap flex-shrink-0">
 
-          {/* Tool buttons */}
-          <div className="flex flex-row gap-2">
-            {[
-              { id: 'pen',    label: '‎PEN‎ '   },
-              { id: 'eraser', label: 'ERASE' },
-              { id: 'fill',   label: 'FILL'  },
-            ].map(tool => (
+            <div className="flex flex-row gap-2">
+              {[
+                { id: 'pen',    label: '‎PEN‎ '   },
+                { id: 'eraser', label: 'ERASE' },
+                { id: 'fill',   label: 'FILL'  },
+              ].map(tool => (
+                <button
+                  key={tool.id}
+                  className={`font-pixel text-[8px] px-3 py-2 border-4 shadow-pixel-sm
+                    transition-transform duration-75
+                    active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
+                    ${activeTool === tool.id
+                      ? 'bg-pixel-gold border-pixel-gold text-pixel-black'
+                      : 'bg-pixel-bgdark border-pixel-border text-white hover:border-pixel-gold'}`}
+                  onClick={() => setActiveTool(tool.id)}
+                >
+                  {tool.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="w-0.5 h-8 bg-pixel-borderAlt flex-shrink-0" />
+
+            <div className="flex flex-row gap-2">
               <button
-                key={tool.id}
-                className={`font-pixel text-[8px] px-3 py-2 border-4 shadow-pixel-sm
-                  transition-transform duration-75
-                  active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
-                  ${activeTool === tool.id
-                    ? 'bg-pixel-gold border-pixel-gold text-pixel-black'
-                    : 'bg-pixel-bgdark border-pixel-border text-white hover:border-pixel-gold'}`}
-                onClick={() => setActiveTool(tool.id)}
+                className="font-pixel text-[8px] px-3 py-2 border-4 border-pixel-border bg-pixel-bgdark text-white shadow-pixel-sm hover:border-pixel-gold active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-transform duration-75"
+                onClick={handleUndo}
               >
-                {tool.label}
+                ↩ UNDO
               </button>
-            ))}
-          </div>
-
-          <div className="w-0.5 h-8 bg-pixel-borderAlt flex-shrink-0" />
-
-          {/* Undo + Clear */}
-          <div className="flex flex-row gap-2">
-            <button
-              className="font-pixel text-[8px] px-3 py-2 border-4 border-pixel-border bg-pixel-bgdark text-white shadow-pixel-sm hover:border-pixel-gold active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-transform duration-75"
-              onClick={handleUndo}
-            >
-              ↩ UNDO
-            </button>
-            <button
-              className="font-pixel text-[8px] px-3 py-2 border-4 border-pixel-border bg-pixel-red text-white shadow-pixel-sm hover:border-pixel-gold active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-transform duration-75  "
-              onClick={handleClear}
-            >
-              ✕ CLEAR
-            </button>
-          </div>
-
-          <div className="w-0.5 h-8 bg-pixel-borderAlt flex-shrink-0" />
-
-          {/* Color swatches */}
-          <div className="flex flex-row gap-1 flex-wrap">
-            {COLORS.map((color, i) => (
               <button
-                key={color}
-                className={`w-7 h-7 border-4 cursor-pointer transition-transform duration-75 hover:scale-110 shadow-pixel-sm
-                  ${selectedColor === color && activeTool !== 'eraser'
-                    ? 'border-pixel-gold scale-110 shadow-pixel-gold'
-                    : 'border-pixel-border'}`}
-                style={{ backgroundColor: color }}
-                onClick={() => handleColorChange(color)}
-                aria-label={color}
-              />
-            ))}
-            {/* Custom color */}
-            <label className="w-7 h-7 border-4 border-pixel-border shadow-pixel-sm cursor-pointer flex items-center justify-center bg-pixel-bgdark hover:border-pixel-gold transition-colors duration-75 relative">
-              <span className="font-pixel text-[8px] text-white pointer-events-none">+</span>
-              <input
-                type="color"
-                className="absolute opacity-0 w-full h-full cursor-pointer"
-                value={selectedColor}
-                onChange={handleCustomColor}
-              />
-            </label>
-          </div>
-
-          <div className="w-0.5 h-8 bg-pixel-borderAlt flex-shrink-0" />
-
-          {/* Size picker */}
-          <div className="flex flex-row items-center gap-1">
-            {SIZES.map((size, i) => (
-              <button
-                key={size}
-                className={`w-9 h-9 border-4 flex items-center justify-center cursor-pointer shadow-pixel-sm
-                  transition-transform duration-75
-                  active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
-                  ${selectedSize === size
-                    ? 'border-pixel-gold bg-pixel-bgdark'
-                    : 'border-pixel-border bg-pixel-panel hover:border-pixel-gold'}`}
-                onClick={() => handleSizeChange(size)}
+                className="font-pixel text-[8px] px-3 py-2 border-4 border-pixel-border bg-pixel-red text-white shadow-pixel-sm hover:border-pixel-gold active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-transform duration-75"
+                onClick={handleClear}
               >
-                <div className="bg-white" style={{ width: DOT_SIZES[i], height: DOT_SIZES[i] }} />
+                ✕ CLEAR
               </button>
-            ))}
+            </div>
+
+            <div className="w-0.5 h-8 bg-pixel-borderAlt flex-shrink-0" />
+
+            <div className="flex flex-row gap-1 flex-wrap">
+              {COLORS.map((color) => (
+                <button
+                  key={color}
+                  className={`w-7 h-7 border-4 cursor-pointer transition-transform duration-75 hover:scale-110 shadow-pixel-sm
+                    ${selectedColor === color && activeTool !== 'eraser'
+                      ? 'border-pixel-gold scale-110 shadow-pixel-gold'
+                      : 'border-pixel-border'}`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => handleColorChange(color)}
+                  aria-label={color}
+                />
+              ))}
+              <label className="w-7 h-7 border-4 border-pixel-border shadow-pixel-sm cursor-pointer flex items-center justify-center bg-pixel-bgdark hover:border-pixel-gold transition-colors duration-75 relative">
+                <span className="font-pixel text-[8px] text-white pointer-events-none">+</span>
+                <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer" value={selectedColor} onChange={handleCustomColor} />
+              </label>
+            </div>
+
+            <div className="flex flex-row items-center gap-1">
+              <div className="w-0.5 h-8 bg-pixel-borderAlt flex-shrink-0 mr-2" />
+              {SIZES.map((size, i) => (
+                <button
+                  key={size}
+                  className={`w-9 h-9 border-4 flex items-center justify-center cursor-pointer shadow-pixel-sm
+                    transition-transform duration-75
+                    active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
+                    ${selectedSize === size
+                      ? 'border-pixel-gold bg-pixel-bgdark'
+                      : 'border-pixel-border bg-pixel-panel hover:border-pixel-gold'}`}
+                  onClick={() => handleSizeChange(size)}
+                >
+                  <div className="bg-white" style={{ width: DOT_SIZES[i], height: DOT_SIZES[i] }} />
+                </button>
+              ))}
+            </div>
           </div>
 
-        </div>
+          {/* ── MOBILE: 3-row compact layout ── */}
+          <div className="lg:hidden flex flex-col bg-pixel-panel border-t-4 border-pixel-border flex-shrink-0 px-2 pt-1.5 pb-3 gap-1.5">
+
+            {/* Row 1: tool buttons + undo/clear */}
+            <div className="flex flex-row items-center gap-1">
+              {[
+                { id: 'pen',    label: 'PEN'   },
+                { id: 'eraser', label: 'ERASE' },
+                { id: 'fill',   label: 'FILL'  },
+              ].map(tool => (
+                <button
+                  key={tool.id}
+                  className={`font-pixel text-[7px] px-1.5 py-0.5 border-2 shadow-pixel-sm
+                    active:translate-x-[1px] active:translate-y-[1px] active:shadow-none
+                    ${activeTool === tool.id
+                      ? 'bg-pixel-gold border-pixel-gold text-pixel-black'
+                      : 'bg-pixel-bgdark border-pixel-border text-white'}`}
+                  onClick={() => setActiveTool(tool.id)}
+                >
+                  {tool.label}
+                </button>
+              ))}
+              <div className="w-px h-5 bg-pixel-borderAlt mx-1 flex-shrink-0" />
+              <button
+                className="font-pixel text-[7px] px-1.5 py-0.5 border-2 border-pixel-border bg-pixel-bgdark text-white shadow-pixel-sm active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                onClick={handleUndo}
+              >
+                ↩ UNDO
+              </button>
+              <button
+                className="font-pixel text-[7px] px-1.5 py-0.5 border-2 border-pixel-border bg-pixel-red text-white shadow-pixel-sm active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                onClick={handleClear}
+              >
+                ✕ CLEAR
+              </button>
+            </div>
+
+            {/* Row 2: color swatches */}
+            <div className="flex flex-row flex-wrap gap-1">
+              {COLORS.map((color) => (
+                <button
+                  key={color}
+                  className={`w-5 h-5 border-2 cursor-pointer
+                    ${selectedColor === color && activeTool !== 'eraser'
+                      ? 'border-pixel-gold shadow-pixel-gold'
+                      : 'border-pixel-border'}`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => handleColorChange(color)}
+                  aria-label={color}
+                />
+              ))}
+              <label className="w-5 h-5 border-2 border-pixel-border cursor-pointer flex items-center justify-center bg-pixel-bgdark relative">
+                <span className="font-pixel text-[6px] text-white pointer-events-none">+</span>
+                <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer" value={selectedColor} onChange={handleCustomColor} />
+              </label>
+            </div>
+
+            {/* Row 3: size buttons — all 5 in one line */}
+            <div className="flex flex-row items-center gap-1">
+              {SIZES.map((size, i) => (
+                <button
+                  key={size}
+                  className={`w-7 h-7 border-2 flex items-center justify-center cursor-pointer
+                    active:translate-x-[1px] active:translate-y-[1px]
+                    ${selectedSize === size
+                      ? 'border-pixel-gold bg-pixel-bgdark'
+                      : 'border-pixel-border bg-pixel-panel'}`}
+                  onClick={() => handleSizeChange(size)}
+                >
+                  <div className="bg-white" style={{ width: DOT_SIZES[i] - 2, height: DOT_SIZES[i] - 2 }} />
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

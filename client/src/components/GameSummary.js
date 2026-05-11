@@ -43,26 +43,26 @@ function PodiumCard({ player, place, height }) {
   const s = PLACE_STYLES[place];
   return (
     <div
-      className={`flex flex-col items-center bg-pixel-panel border-4 ${s.border} w-44 ${height} p-3 animate-winner-pop`}
+      className={`flex flex-col items-center bg-pixel-panel border-4 ${s.border} w-24 lg:w-44 ${height} p-1.5 lg:p-3 animate-winner-pop`}
       style={{
         boxShadow: place === 1 ? '4px 4px 0 #B8860B' : place === 2 ? '4px 4px 0 #888' : '4px 4px 0 #B85C00',
         animationDelay: `${(place - 1) * 0.15}s`
       }}
     >
-      <div className={`${s.labelBg} ${s.labelTx} font-pixel text-[10px] border-2 border-pixel-border px-3 py-1 w-full text-center mb-3`}
+      <div className={`${s.labelBg} ${s.labelTx} font-pixel text-[8px] lg:text-[10px] border-2 border-pixel-border px-1 lg:px-3 py-0.5 lg:py-1 w-full text-center mb-1.5 lg:mb-3`}
         style={{ boxShadow: '2px 2px 0 #000' }}>
         {s.label}
       </div>
-      <div className="w-16 h-16 border-4 border-pixel-border overflow-hidden bg-pixel-bgdark mb-2 flex-shrink-0">
+      <div className="w-10 h-10 lg:w-16 lg:h-16 border-2 lg:border-4 border-pixel-border overflow-hidden bg-pixel-bgdark mb-1 lg:mb-2 flex-shrink-0">
         {player.avatar?.url
           ? <img src={player.avatar.url} alt={player.username} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
           : <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: player.avatar?.color || '#2A2D7A' }}>
-              <span className="font-pixel text-[8px] text-white">{player.username?.[0]?.toUpperCase()}</span>
+              <span className="font-pixel text-[6px] lg:text-[8px] text-white">{player.username?.[0]?.toUpperCase()}</span>
             </div>
         }
       </div>
-      <span className="font-pixel text-[9px] text-white truncate max-w-full text-center mb-1">{player.username}</span>
-      <span className={`font-pixel text-sm ${s.scoreTx} tabular-nums`}>{player.score} PTS</span>
+      <span className="font-pixel text-[7px] lg:text-[9px] text-white truncate max-w-full text-center mb-0.5 lg:mb-1">{player.username}</span>
+      <span className={`font-pixel text-[9px] lg:text-sm ${s.scoreTx} tabular-nums`}>{player.score} PTS</span>
     </div>
   );
 }
@@ -352,7 +352,7 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
   // Podium: display order 2nd | 1st | 3rd
   const podiumDisplay = [leaderboard[1], leaderboard[0], leaderboard[2]];
   const podiumPlaces  = [2, 1, 3];
-  const podiumHeights = ['h-44', 'h-56', 'h-36'];
+  const podiumHeights = ['h-36 lg:h-44', 'h-44 lg:h-56', 'h-32 lg:h-36'];
 
   const handleShareCard = useCallback(async () => {
     setSharing(true);
@@ -378,21 +378,21 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
 
   return (
     <div className="overflow-y-auto">
-      <div className="max-w-5xl mx-auto px-8 py-4">
+      <div className="max-w-5xl mx-auto px-3 lg:px-8 py-2 lg:py-4">
 
         {/* Title */}
-        <div className="text-center py-6">
-          <h1 className="font-pixel text-3xl text-pixel-gold" style={{ textShadow: '4px 4px 0 #B8860B' }}>
+        <div className="text-center py-3 lg:py-6">
+          <h1 className="font-pixel text-xl lg:text-3xl text-pixel-gold" style={{ textShadow: '4px 4px 0 #B8860B' }}>
             GAME&nbsp;&nbsp;OVER!
           </h1>
         </div>
 
         {/* ── Final Standings ── */}
-        <h2 className="font-pixel text-sm text-pixel-gold pb-10">
+        <h2 className="font-pixel text-sm text-pixel-gold pb-2 lg:pb-10">
           FINAL STANDINGS
         </h2>
 
-        <div className="flex flex-row items-end justify-center gap-4 mb-8">
+        <div className="flex flex-row items-start lg:items-end justify-center gap-2 lg:gap-4 mb-6 lg:mb-8">
           {podiumDisplay.map((entry, i) => {
             if (!entry) return <div key={i} className="w-44" />;
             const [, player] = entry;
@@ -437,11 +437,11 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
         )}
 
         {/* ── Achievements ── */}
-        <h2 className="font-pixel text-sm text-pixel-gold pb-10">
+        <h2 className="font-pixel text-sm text-pixel-gold pb-4 lg:pb-10">
           ACHIEVEMENTS
         </h2>
 
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-2 lg:gap-4 mb-6 lg:mb-8">
           {ACHIEVEMENT_DEFS.map((def) => {
             const winner = achievements.find(a => a.title === def.title);
             const isUnlocked = !!winner;
@@ -449,13 +449,13 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
             return (
               <div
                 key={def.title}
-                className={`flex flex-row items-center gap-4 border-4 p-4
+                className={`flex flex-row items-center gap-2 lg:gap-4 border-2 lg:border-4 p-2 lg:p-4
                   ${isUnlocked ? 'bg-pixel-panel border-pixel-gold' : 'bg-pixel-bgdark border-pixel-borderAlt opacity-50'}`}
                 style={{ boxShadow: isUnlocked ? '4px 4px 0 #B8860B' : '4px 4px 0 #000' }}
               >
                 {/* Badge */}
                 <div
-                  className={`font-pixel text-[9px] border-4 border-pixel-border px-2 py-2 text-center flex-shrink-0 w-16
+                  className={`font-pixel text-[7px] lg:text-[9px] border-2 lg:border-4 border-pixel-border px-1 lg:px-2 py-1 lg:py-2 text-center flex-shrink-0 w-10 lg:w-16
                     ${isUnlocked ? `${def.badgeBg} ${def.badgeTx}` : 'bg-pixel-bgdark text-pixel-dim'}`}
                   style={{ boxShadow: '2px 2px 0 #000' }}
                 >
@@ -463,11 +463,11 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
                 </div>
 
                 {/* Text */}
-                <div className="flex flex-col gap-2 min-w-0 flex-1">
-                  <span className={`font-pixel text-[11px] leading-tight ${isUnlocked ? 'text-pixel-gold' : 'text-pixel-dim'}`}>
+                <div className="flex flex-col gap-1 lg:gap-2 min-w-0 flex-1">
+                  <span className={`font-pixel text-[8px] lg:text-[11px] leading-tight ${isUnlocked ? 'text-pixel-gold' : 'text-pixel-dim'}`}>
                     {def.label}
                   </span>
-                  <span className="font-pixel text-[8px] text-pixel-dim leading-relaxed">
+                  <span className="font-pixel text-[6px] lg:text-[8px] text-pixel-dim leading-relaxed">
                     {def.desc}
                   </span>
 
@@ -497,11 +497,11 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
         {/* ── Best Drawings ── */}
         {roundHistory.length > 0 && (
           <>
-            <h2 className="font-pixel text-sm text-pixel-gold pb-10">
+            <h2 className="font-pixel text-sm text-pixel-gold pb-4 lg:pb-10">
               BEST DRAWINGS
             </h2>
 
-            <div className="grid grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
               {roundHistory.map((round, i) => (
                 <div key={i} className="flex flex-col gap-2">
                   <div className="border-4 border-pixel-border bg-white overflow-hidden" style={{ boxShadow: '4px 4px 0 #000' }}>
@@ -519,23 +519,23 @@ function GameSummary({ summary, roomId, socketId, onBackToLobby }) {
         )}
 
         {/* ── Action Buttons ── */}
-        <div className="flex flex-row gap-4 justify-center py-6 flex-wrap">
+        <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 items-stretch lg:items-center lg:justify-center py-4 lg:py-6">
           <button
-            className="pixel-btn px-8 py-3 text-[10px]"
+            className="pixel-btn px-5 lg:px-8 py-2 lg:py-3 text-[9px] lg:text-[10px]"
             onClick={handleShareCard}
             disabled={sharing}
           >
             {sharing ? '...' : 'SHARE MY CARD'}
           </button>
           <button
-            className="pixel-btn-secondary px-8 py-3 text-[10px]"
+            className="pixel-btn-secondary px-5 lg:px-8 py-2 lg:py-3 text-[9px] lg:text-[10px]"
             onClick={handleShareCollage}
             disabled={sharing}
           >
             SHARE COLLAGE
           </button>
           <button
-            className="pixel-btn-secondary px-8 py-3 text-[10px] border-pixel-cyan text-pixel-cyan"
+            className="pixel-btn-secondary px-5 lg:px-8 py-2 lg:py-3 text-[9px] lg:text-[10px] border-pixel-cyan text-pixel-cyan"
             onClick={onBackToLobby}
           >
             BACK TO LOBBY

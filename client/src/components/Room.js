@@ -174,7 +174,7 @@ function Room({ initialState, socketId, onLeave }) {
 
   if (gameState === 'GAME_OVER' && gameSummary) {
     return (
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 overflow-hidden pb-12 lg:pb-0">
         {/* Header */}
         <header className="relative h-14 bg-pixel-bgdark border-b-4 border-pixel-border flex items-center justify-between px-4 flex-shrink-0" style={{ boxShadow: '0 4px 0 #000', zIndex: 10 }}>
           <span className="font-pixel text-sm text-pixel-gold" style={{ textShadow: '2px 2px 0 #000' }}>
@@ -191,12 +191,13 @@ function Room({ initialState, socketId, onLeave }) {
         <div className="flex-1 overflow-y-auto p-4">
           <GameSummary summary={gameSummary} roomId={roomId} socketId={socketId} onBackToLobby={handleBackToLobby} />
         </div>
+        <Chat roomId={roomId} socketId={socketId} players={players} />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden relative">
+    <div className="flex flex-col flex-1 overflow-hidden relative pb-12 lg:pb-0">
 
       {/* Reconnect banner */}
       {disconnected && (
@@ -268,7 +269,7 @@ function Room({ initialState, socketId, onLeave }) {
               <span className="font-pixel text-[7px] text-pixel-dim">
                 ROUND {round}/{totalRounds}
               </span>
-              {}
+             
             </div>
           )}
         </div>
@@ -283,14 +284,41 @@ function Room({ initialState, socketId, onLeave }) {
         </button>
       </header>
 
-      {/* 3-column body */}
-      <div className="flex flex-row flex-1 overflow-hidden">
+      {/* Body: flex-col on mobile (full-width content), flex-row on desktop (3-column) */}
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
 
-        {/* Left: player list */}
-        <PlayerList players={players} host={host} socketId={socketId} gameState={gameState} />
+        {/* Left: player list — hidden on mobile, visible on desktop */}
+       
+          <PlayerList players={players} host={host} socketId={socketId} gameState={gameState} />
+        
 
         {/* Center: phase content */}
         <section className="flex-1 flex flex-col overflow-hidden">
+
+          {/* Mobile: compact horizontal player strip (hidden on desktop) */}
+          <div className="lg:hidden flex-shrink-0 overflow-x-auto bg-pixel-panel border-b-4 border-pixel-border">
+            <div className="flex flex-row gap-1.5 px-2 py-1.5 min-w-max">
+              {Object.entries(players).map(([id, player]) => (
+                <div
+                  key={id}
+                  className={`flex items-center gap-1 px-1.5 py-0.5 border-2 flex-shrink-0
+                    ${id === socketId ? 'border-pixel-cyan bg-pixel-bgdark' : id === host ? 'border-pixel-gold' : 'border-pixel-borderAlt'}`}
+                >
+                  {player.avatar?.url
+                    ? <img src={player.avatar.url} alt="" className="w-5 h-5 object-cover flex-shrink-0" style={{ imageRendering: 'pixelated' }} />
+                    : <span className="w-5 h-5 flex items-center justify-center text-xs border border-pixel-border flex-shrink-0" style={{ backgroundColor: player.avatar?.color || '#444' }}>{player.avatar?.emoji || '👤'}</span>
+                  }
+                  <div className="flex flex-col min-w-0">
+                    <span className={`font-pixel text-[5px] leading-tight ${id === socketId ? 'text-pixel-cyan' : id === host ? 'text-pixel-gold' : 'text-white'}`}>
+                      {player.username.slice(0, 8)}
+                    </span>
+                    <span className="font-pixel text-[5px] text-pixel-gold leading-tight">{player.score ?? 0}pt</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {error && (
             <div className="bg-pixel-red border-4 border-pixel-border font-pixel text-[10px] text-white px-3 py-2 m-2 flex-shrink-0"
               style={{ boxShadow: '4px 4px 0 #8B0000' }}>
