@@ -96,52 +96,63 @@ function JoinRoom({ onJoin }) {
 
   const prevAvatar = () => setAvatarIdx(i => (i - 1 + AVATARS.length) % AVATARS.length);
   const nextAvatar = () => setAvatarIdx(i => (i + 1) % AVATARS.length);
+  const randomAvatar = () => setAvatarIdx(Math.floor(Math.random() * AVATARS.length));
 
   return (
-    <div className="flex-1 flex items-center justify-center p-4 sm:p-8 overflow-y-auto">
+    <div className="flex-1 flex flex-col items-center justify-center py-10 px-4 gap-6 overflow-y-auto">
+
+      {/* Title — outside card */}
+      <div className="flex flex-row items-baseline">
+        <span className="font-pixel text-3xl sm:text-3xl text-pixel-gold leading-tight"
+          style={{ textShadow: '4px 4px 0 #B8860B' }}>
+          DOO
+        </span>
+        <span className="font-pixel text-3xl sm:text-3xl text-pixel-pink leading-tight"
+          style={{ textShadow: '4px 4px 0 #000' }}>
+          DUEL
+        </span>
+      </div>
+
+      {/* Card */}
       <div
-        className={`pixel-card max-w-[480px] w-full ${shake ? 'animate-shake' : ''}`}
+        className={`pixel-card p-6 sm:p-8 max-w-[480px] w-full flex flex-col gap-6 ${shake ? 'animate-shake' : ''}`}
         style={{ position: 'relative', zIndex: 2 }}
       >
-        <div className="p-6 sm:p-8 flex flex-col gap-6">
+        {/* Hero Row */}
+        <div className="flex flex-col sm:flex-row gap-6 items-start">
 
-          {/* Hero Row */}
-          <div className="flex flex-col sm:flex-row gap-6 items-start">
+          {/* Left — hero copy */}
+          <div className="flex-1 flex flex-col gap-3">
+            <p className="font-pixel text-[11px] text-white leading-relaxed">
+              READY,<br />
+              {username.trim() ? username.trim().toUpperCase() : 'PLAYER 1'}?
+            </p>
+            <p className="font-pixel text-[8px] text-pixel-dim leading-loose tracking-wide">
+              DRAW · VOTE · WIN
+            </p>
+            <div className="flex flex-col gap-1 mt-1">
 
-            {/* Left — hero copy */}
-            <div className="flex-1 flex flex-col gap-3">
-              <div className="flex flex-row items-baseline">
-                <span className="font-pixel text-xl text-pixel-gold leading-tight">DOO</span>
-                <span className="font-pixel text-xl text-pixel-pink leading-tight">DUEL</span>
-              </div>
-
-              <p className="font-pixel text-[11px] text-white leading-relaxed">
-                READY,<br />
-                {username.trim() ? username.trim().toUpperCase() : 'PLAYER 1'}?
-              </p>
-
-              <p className="font-pixel text-[8px] text-pixel-dim leading-loose tracking-wide">
-                DRAW · VOTE · WIN
-              </p>
-
-              {/* Pixel hearts */}
-              {/* <div className="flex flex-col gap-1 mt-1">
-                <div className="flex flex-row gap-1">
-                  {[0,1,2,3].map(i => (
-                    <span key={i} className="text-pixel-pink text-sm">♥</span>
-                  ))}
-                </div>
-                <div className="flex flex-row gap-1">
-                  {[0,1,2,3].map(i => (
-                    <span key={i} className="text-pixel-pink text-sm">♥</span>
-                  ))}
-                </div>
-              </div> */}
             </div>
+          </div>
 
-            {/* Right — avatar carousel */}
-            <div className="flex flex-col items-center gap-2 self-center sm:self-start">
-              {/* Preview box */}
+          {/* Right — avatar section */}
+          <div className="flex flex-col items-center gap-2 self-center sm:self-start">
+
+            {/* Dice + avatar box row — tops aligned */}
+            <div className="flex flex-row items-start gap-3">
+
+              {/* Dice image */}
+              <img
+                src="/assets/dice.png"
+                alt="Randomize avatar"
+                className={`w-8 h-8 cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity duration-75
+                  ${joining ? 'pointer-events-none opacity-40' : ''}`}
+                style={{ imageRendering: 'pixelated' }}
+                onClick={randomAvatar}
+                title="Random avatar"
+              />
+
+              {/* Avatar preview box */}
               <div className="w-28 h-28 border-4 border-pixel-border bg-pixel-bgdark overflow-hidden"
                 style={{ boxShadow: '4px 4px 0 #000' }}>
                 <img
@@ -152,117 +163,116 @@ function JoinRoom({ onJoin }) {
                   onError={e => { e.target.style.display = 'none'; }}
                 />
               </div>
+            </div>
 
-              {/* Counter */}
-              <span className="font-pixel text-[8px] text-pixel-dim">
-                {avatarIdx + 1} / {AVATARS.length}
-              </span>
+            {/* Counter */}
+            <span className="font-pixel text-[8px] text-pixel-dim">
+              {avatarIdx + 1} / {AVATARS.length}
+            </span>
 
-              {/* Arrows */}
-              <div className="flex flex-row gap-4">
-                <button
-                  type="button"
-                  className="pixel-btn-secondary px-3 py-1 text-base"
-                  onClick={prevAvatar}
-                  disabled={joining}
-                  aria-label="Previous avatar"
-                >
-                  ←
-                </button>
-                <button
-                  type="button"
-                  className="pixel-btn-secondary px-3 py-1 text-base"
-                  onClick={nextAvatar}
-                  disabled={joining}
-                  aria-label="Next avatar"
-                >
-                  →
-                </button>
-              </div>
+            {/* Arrow buttons */}
+            <div className="flex flex-row gap-4">
+              <button
+                type="button"
+                className="pixel-btn-secondary px-3 py-1 text-base"
+                onClick={prevAvatar}
+                disabled={joining}
+                aria-label="Previous avatar"
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                className="pixel-btn-secondary px-3 py-1 text-base"
+                onClick={nextAvatar}
+                disabled={joining}
+                aria-label="Next avatar"
+              >
+                →
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* Divider */}
-          <div className="border-t-4 border-pixel-border" />
+        {/* Divider */}
+        <div className="border-t-4 border-pixel-border" />
 
-          {/* Form */}
-          <div className="flex flex-col gap-4">
+        {/* Form */}
+        <div className="flex flex-col gap-4">
 
-            {/* Username */}
-            <div className="flex flex-col gap-1">
-              <label className="font-pixel text-[8px] text-pixel-dim">PLAYER NAME</label>
-              <div className="relative">
-                <input
-                  className="pixel-input"
-                  type="text"
-                  placeholder="ENTER NAME..."
-                  value={username}
-                  onChange={e => setUsername(e.target.value.slice(0, 16))}
-                  maxLength={16}
-                  autoFocus
-                  autoComplete="off"
-                  spellCheck={false}
-                  disabled={joining}
-                />
-                {username.length > 0 && (
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 font-pixel text-[8px] text-pixel-dim pointer-events-none">
-                    {username.length}/16
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Room code */}
-            <div className="flex flex-col gap-1">
-              <label className="font-pixel text-[8px] text-pixel-dim">
-                ROOM CODE <span className="text-pixel-dim">(OPTIONAL)</span>
-              </label>
+          {/* Username */}
+          <div className="flex flex-col gap-1">
+            <label className="font-pixel text-[8px] text-pixel-dim">PLAYER NAME</label>
+            <div className="relative">
               <input
-                className="pixel-input uppercase"
+                className="pixel-input"
                 type="text"
-                placeholder="XXXX"
-                value={roomId}
-                onChange={e => setRoomId(e.target.value.toUpperCase().slice(0, 4))}
-                maxLength={4}
+                placeholder="ENTER NAME..."
+                value={username}
+                onChange={e => setUsername(e.target.value.slice(0, 16))}
+                maxLength={16}
+                autoFocus
                 autoComplete="off"
                 spellCheck={false}
                 disabled={joining}
               />
+              {username.length > 0 && (
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 font-pixel text-[8px] text-pixel-dim pointer-events-none">
+                  {username.length}/16
+                </span>
+              )}
             </div>
-
-            {/* Error */}
-            {error && (
-              <div
-                className="border-4 border-pixel-red bg-pixel-panel p-3 animate-shake"
-                style={{ boxShadow: '4px 4px 0 #8B0000' }}
-              >
-                <p className="font-pixel text-[9px] text-pixel-red leading-relaxed m-0">
-                  ✕ {error}
-                </p>
-              </div>
-            )}
-
-            {/* JOIN button */}
-            <button
-              type="button"
-              className="pixel-btn w-full mt-1"
-              onClick={handleJoin}
-              disabled={joining}
-            >
-              {joining ? '•••' : '▶ JOIN GAME'}
-            </button>
-
-            {/* CREATE button */}
-            <button
-              type="button"
-              className="pixel-btn-secondary w-full"
-              onClick={handleCreate}
-              disabled={joining}
-            >
-              {joining ? '•••' : '+ CREATE ROOM'}
-            </button>
           </div>
 
+          {/* Room code */}
+          <div className="flex flex-col gap-1">
+            <label className="font-pixel text-[8px] text-pixel-dim">
+              ROOM CODE <span className="text-pixel-dim">(OPTIONAL)</span>
+            </label>
+            <input
+              className="pixel-input uppercase"
+              type="text"
+              placeholder="XXXX"
+              value={roomId}
+              onChange={e => setRoomId(e.target.value.toUpperCase().slice(0, 4))}
+              maxLength={4}
+              autoComplete="off"
+              spellCheck={false}
+              disabled={joining}
+            />
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div
+              className="border-4 border-pixel-red bg-pixel-panel p-3 animate-shake"
+              style={{ boxShadow: '4px 4px 0 #8B0000' }}
+            >
+              <p className="font-pixel text-[9px] text-pixel-red leading-relaxed m-0">
+                ✕ {error}
+              </p>
+            </div>
+          )}
+
+          {/* JOIN button */}
+          <button
+            type="button"
+            className="pixel-btn w-full mt-1"
+            onClick={handleJoin}
+            disabled={joining}
+          >
+            {joining ? '•••' : '▶ JOIN GAME'}
+          </button>
+
+          {/* CREATE button */}
+          <button
+            type="button"
+            className="pixel-btn-secondary w-full"
+            onClick={handleCreate}
+            disabled={joining}
+          >
+            {joining ? '•••' : '+ CREATE ROOM'}
+          </button>
         </div>
       </div>
     </div>
