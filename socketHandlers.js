@@ -268,25 +268,25 @@ function registerHandlers(io, socket) {
       socketId: socket.id
     });
 
-    // If game is active but fewer than 2 players remain, reset to WAITING
+    // If game is active but fewer than 2 players remain, do a full reset to WAITING
     const playerCount = Object.keys(room.players).length;
     if (playerCount < 2 && room.gameState !== 'WAITING') {
       clearRoomTimer(roomId);
-      room.gameState = 'WAITING';
-      room.drawings = {};
-      room.votes = {};
-      room.currentPrompt = null;
-
+      resetGame(roomId); // clears round, scores, drawings, votes, skips, anon maps
       io.to(roomId).emit('gameStateChange', {
         gameState: 'WAITING',
         players: room.players,
         host: room.host
       });
+      return;
     }
 
-    // Broadcast updated vote count if in voting phase
+    // If still in VOTING: update counter and check if all remaining players have acted
     if (room.gameState === 'VOTING') {
       io.to(roomId).emit('voteUpdate', getVoteInfo(roomId));
+      if (allPlayersActed(roomId)) {
+        advanceToResults(io, roomId);
+      }
     }
   });
 }

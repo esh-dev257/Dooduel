@@ -341,7 +341,7 @@ function getAnonymousDrawings(roomId) {
   if (!room) return {};
 
   const entries = Object.entries(room.drawings).filter(
-    ([socketId]) => room.players[socketId]
+    ([socketId, strokes]) => room.players[socketId] && strokes.length > 0
   );
 
   // Shuffle entries for random order
