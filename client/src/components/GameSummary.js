@@ -49,7 +49,7 @@ function PodiumCard({ player, place, height }) {
         animationDelay: `${(place - 1) * 0.15}s`
       }}
     >
-      <div className={`${s.labelBg} ${s.labelTx} font-pixel text-[8px] lg:text-[10px] border-2 border-pixel-border px-1 lg:px-3 py-0.5 lg:py-1 w-full text-center mb-1.5 lg:mb-3`}
+      <div className={`${s.labelBg} ${s.labelTx} font-pixel text-[8px] lg:text-[10px] leading-none border-2 border-pixel-border px-1 lg:px-3 py-1 lg:py-1.5 w-full text-center mb-1.5 lg:mb-3`}
         style={{ boxShadow: '2px 2px 0 #000' }}>
         {s.label}
       </div>
@@ -57,12 +57,12 @@ function PodiumCard({ player, place, height }) {
         {player.avatar?.url
           ? <img src={player.avatar.url} alt={player.username} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
           : <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: player.avatar?.color || '#2A2D7A' }}>
-              <span className="font-pixel text-[6px] lg:text-[8px] text-white">{player.username?.[0]?.toUpperCase()}</span>
+              <span className="font-pixel text-[6px] lg:text-[8px] leading-none text-white">{player.username?.[0]?.toUpperCase()}</span>
             </div>
         }
       </div>
-      <span className="font-pixel text-[7px] lg:text-[9px] text-white truncate max-w-full text-center mb-0.5 lg:mb-1">{player.username}</span>
-      <span className={`font-pixel text-[9px] lg:text-sm ${s.scoreTx} tabular-nums`}>{player.score} PTS</span>
+      <span className="font-pixel text-[7px] lg:text-[9px] leading-none text-white truncate max-w-full text-center mb-0.5 lg:mb-1">{player.username}</span>
+      <span className={`font-pixel text-[9px] lg:text-sm leading-none ${s.scoreTx} tabular-nums`}>{player.score} PTS</span>
     </div>
   );
 }
