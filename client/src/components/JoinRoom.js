@@ -127,7 +127,7 @@ function JoinRoom({ onJoin }) {
               READY,<br />
               {username.trim() ? username.trim().toUpperCase() : 'PLAYER 1'}?
             </p>
-            <p className="font-pixel text-[8px] text-pixel-dim leading-loose tracking-wide">
+            <p className="font-pixel text-[12px] text-pixel-dim leading-loose tracking-wide">
               DRAW · VOTE · WIN
             </p>
             <div className="flex flex-col gap-1 mt-1">
