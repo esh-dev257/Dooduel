@@ -25,40 +25,46 @@ function rateDrawing(strokes) {
     };
   }
 
-  // --- Effort: stroke count + total points ---
-  const totalPoints = strokes.reduce((sum, s) => sum + (s.points?.length || 0), 0);
-  const strokeCount = strokes.length;
+  // Separate pen strokes from fill actions — fills have no point arrays
+  const penStrokes = strokes.filter(s => s.type !== 'fill');
+  const penStrokeCount = penStrokes.length;
 
-  // More strokes and points = more effort
-  const strokeScore = clamp(strokeCount / 3, 0, 10);     // 30 strokes = max
-  const pointScore = clamp(totalPoints / 80, 0, 10);     // 800 points = max
+  // --- Effort: all actions (pen + fill) count, point density from pen only ---
+  const totalPoints = penStrokes.reduce((sum, s) => sum + (s.points?.length || 0), 0);
+  const actionCount = strokes.length;
+  const strokeScore = clamp(actionCount / 3, 0, 10);    // 30 actions = max
+  const pointScore  = clamp(totalPoints / 80, 0, 10);   // 800 points = max
   const effort = strokeScore * 0.4 + pointScore * 0.6;
 
-  // --- Coverage: bounding box area vs canvas area ---
+  // --- Coverage: bounding box — pen points + fill origins both count ---
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const stroke of strokes) {
-    for (const p of (stroke.points || [])) {
-      if (p.x < minX) minX = p.x;
-      if (p.y < minY) minY = p.y;
-      if (p.x > maxX) maxX = p.x;
-      if (p.y > maxY) maxY = p.y;
+    if (stroke.type === 'fill') {
+      if (stroke.x < minX) minX = stroke.x;
+      if (stroke.y < minY) minY = stroke.y;
+      if (stroke.x > maxX) maxX = stroke.x;
+      if (stroke.y > maxY) maxY = stroke.y;
+    } else {
+      for (const p of (stroke.points || [])) {
+        if (p.x < minX) minX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y > maxY) maxY = p.y;
+      }
     }
   }
 
   const canvasArea = CANVAS_W * CANVAS_H;
-  const boxW = Math.max(0, maxX - minX);
-  const boxH = Math.max(0, maxY - minY);
-  const boxArea = boxW * boxH;
-  const coverageRatio = boxArea / canvasArea;
-  const coverage = clamp(coverageRatio * 15, 0, 10); // ~67% coverage = max
+  const boxW = Math.max(0, Number.isFinite(maxX) ? maxX - minX : 0);
+  const boxH = Math.max(0, Number.isFinite(maxY) ? maxY - minY : 0);
+  const coverage = clamp((boxW * boxH) / canvasArea * 15, 0, 10); // ~67% = max
 
-  // --- Color variety: unique colors used ---
-  const uniqueColors = new Set(strokes.map(s => s.color));
-  const colorCount = uniqueColors.size;
-  const colorVariety = clamp((colorCount / 4) * 10, 0, 10); // 4+ colors = max
+  // --- Color variety: unique colors across all actions ---
+  const uniqueColors = new Set(strokes.map(s => s.color).filter(Boolean));
+  const colorVariety = clamp((uniqueColors.size / 4) * 10, 0, 10); // 4+ colors = max
 
-  // --- Detail: average points per stroke (smoother = more detailed) ---
-  const avgPointsPerStroke = totalPoints / strokeCount;
+  // --- Detail: avg points per pen stroke — guard 0 for fills-only drawings ---
+  const avgPointsPerStroke = penStrokeCount > 0 ? totalPoints / penStrokeCount : 0;
   const detail = clamp(avgPointsPerStroke / 15, 0, 10); // 150+ avg points = max
 
   // --- Overall score (weighted) ---

@@ -154,41 +154,91 @@ function startResultPhase(io, roomId) {
   if (!room) return;
 
   clearRoomTimer(roomId);
-
   room.gameState = 'RESULT';
-  const results = tallyVotes(roomId);
 
   console.log(`[${roomId}] RESULT phase — Round ${room.round}`);
 
-  // Rate each player's drawing and award bonus points
+  // STEP 1: Tally votes → 100 pts per vote received, get tied top candidates
+  const { voteCounts, topCandidates, maxVotes } = tallyVotes(roomId);
+
+  // STEP 2: Rate every drawing → quality bonus (score × 10, max 100 pts each)
   const ratings = {};
   for (const [socketId, strokes] of Object.entries(room.drawings)) {
     if (room.players[socketId]) {
       const rating = rateDrawing(strokes);
-      ratings[socketId] = {
-        username: room.players[socketId].username,
-        ...rating
-      };
-      const bonus = Math.round(rating.score * 10);
-      room.players[socketId].score += bonus;
-      if (results?.scores?.[socketId]) {
-        results.scores[socketId].score = room.players[socketId].score;
-      }
+      ratings[socketId] = { username: room.players[socketId].username, ...rating };
+      room.players[socketId].score += Math.round(rating.score * 10);
       updateRatingStats(roomId, socketId, rating.score);
     }
   }
 
-  // Save round winner to history for game summary collage
-  if (results?.winners?.length > 0) {
-    const winner = results.winners[0];
-    const winnerStrokes = room.drawings[winner.socketId] || [];
+  // STEP 3: Resolve the round winner
+  //   Primary   — most votes
+  //   Tiebreaker — highest quality rating among tied vote leaders
+  //   All-skip  — highest quality rating across all players
+  //   True tie  — both conditions equal → co-winners, both get bonus
+  let resolvedWinners = [];
+
+  if (maxVotes > 0) {
+    if (topCandidates.length === 1) {
+      resolvedWinners = topCandidates;
+    } else {
+      // Break vote tie with quality rating
+      let maxQuality = -1;
+      for (const c of topCandidates) {
+        const q = ratings[c.socketId]?.score ?? 0;
+        if (q > maxQuality) maxQuality = q;
+      }
+      resolvedWinners = topCandidates.filter(
+        c => (ratings[c.socketId]?.score ?? 0) === maxQuality
+      );
+    }
+  } else {
+    // All-skip: quality rating decides
+    let maxQuality = -1;
+    for (const [sid, r] of Object.entries(ratings)) {
+      if (room.players[sid] && r.score > maxQuality) maxQuality = r.score;
+    }
+    if (maxQuality > 0) {
+      resolvedWinners = Object.entries(ratings)
+        .filter(([sid, r]) => room.players[sid] && r.score === maxQuality)
+        .map(([sid]) => ({
+          socketId: sid,
+          username: room.players[sid].username,
+          avatar:   room.players[sid].avatar || null,
+          votes:    0
+        }));
+    }
+  }
+
+  // STEP 4: Award winner bonus (200 pts — makes votes clearly the dominant factor)
+  for (const w of resolvedWinners) {
+    if (room.players[w.socketId]) {
+      room.players[w.socketId].score += 200;
+    }
+  }
+
+  // STEP 5: Build results snapshot AFTER all bonuses are applied
+  const results = {
+    winners:    resolvedWinners,
+    voteCounts,
+    scores: Object.fromEntries(
+      Object.entries(room.players).map(([id, p]) => [
+        id, { username: p.username, score: p.score, avatar: p.avatar }
+      ])
+    )
+  };
+
+  // STEP 6: Save round winner for game summary collage
+  if (resolvedWinners.length > 0) {
+    const w = resolvedWinners[0];
     saveRoundWinner(roomId, {
-      round: room.round,
-      prompt: room.currentPrompt,
-      winnerSocketId: winner.socketId,
-      winnerUsername: winner.username,
-      winnerAvatar: room.players[winner.socketId]?.avatar || null,
-      strokes: winnerStrokes
+      round:           room.round,
+      prompt:          room.currentPrompt,
+      winnerSocketId:  w.socketId,
+      winnerUsername:  w.username,
+      winnerAvatar:    room.players[w.socketId]?.avatar || null,
+      strokes:         room.drawings[w.socketId] || []
     });
   }
 
@@ -213,12 +263,9 @@ function startResultPhase(io, roomId) {
   const resultTick = setInterval(() => {
     resultRemaining -= 1;
     io.to(roomId).emit('timerTick', { remaining: resultRemaining });
-    if (resultRemaining <= 0) {
-      clearInterval(resultTick);
-    }
+    if (resultRemaining <= 0) clearInterval(resultTick);
   }, 1000);
 
-  // After result display
   room.timer = setTimeout(() => {
     clearInterval(resultTick);
     room.timer = null;
@@ -226,12 +273,10 @@ function startResultPhase(io, roomId) {
     resetRound(roomId);
 
     if (isFinalRound) {
-      // Game over — send summary then reset server state
       const summary = getGameSummary(roomId);
       io.to(roomId).emit('gameOver', summary);
       resetGame(roomId);
     } else {
-      // Verify enough players before next round
       const currentRoom = getRoom(roomId);
       if (!currentRoom || Object.keys(currentRoom.players).length < 2) {
         if (currentRoom) {
@@ -244,7 +289,6 @@ function startResultPhase(io, roomId) {
         }
         return;
       }
-      // Auto-start next round
       currentRoom.round += 1;
       startDrawingPhase(io, roomId);
     }

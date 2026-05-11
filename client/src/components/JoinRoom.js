@@ -79,35 +79,48 @@ function JoinRoom({ onJoin }) {
     }
   };
 
+  const validateRoomCode = (code) => {
+    if (!code.trim()) return 'ROOM CODE IS REQUIRED';
+    if (!/^[A-Z0-9]{4}$/.test(code)) return 'CODE MUST BE 4 LETTERS/DIGITS';
+    if (!/[A-Z]/.test(code)) return 'CODE MUST INCLUDE AT LEAST 1 LETTER';
+    if (!/[0-9]/.test(code)) return 'CODE MUST INCLUDE AT LEAST 1 NUMBER';
+    return null;
+  };
+
   const handleJoin = () => {
-    if (!roomId.trim()) {
-      setError('ROOM CODE IS REQUIRED');
-      triggerShake();
-      return;
-    }
+    const err = validateRoomCode(roomId);
+    if (err) { setError(err); triggerShake(); return; }
     doJoin(roomId);
   };
 
   const handleCreate = () => {
-    const code = Math.random().toString(36).slice(2, 6).toUpperCase();
+    const L = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const D = '0123456789';
+    const pick = s => s[Math.floor(Math.random() * s.length)];
+    const chars = [pick(L), pick(L), pick(D), pick(D)];
+    for (let i = 3; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [chars[i], chars[j]] = [chars[j], chars[i]];
+    }
+    const code = chars.join('');
     setRoomId(code);
     doJoin(code);
   };
 
-  const prevAvatar = () => setAvatarIdx(i => (i - 1 + AVATARS.length) % AVATARS.length);
-  const nextAvatar = () => setAvatarIdx(i => (i + 1) % AVATARS.length);
+  const prevAvatar   = () => setAvatarIdx(i => (i - 1 + AVATARS.length) % AVATARS.length);
+  const nextAvatar   = () => setAvatarIdx(i => (i + 1) % AVATARS.length);
   const randomAvatar = () => setAvatarIdx(Math.floor(Math.random() * AVATARS.length));
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center py-10 px-4 gap-6 overflow-y-auto">
+    <div className="flex-1 flex flex-col items-center justify-center py-3 sm:py-10 px-4 gap-3 sm:gap-6 overflow-y-auto">
 
       {/* Title — outside card */}
       <div className="flex flex-row items-baseline">
-        <span className="font-pixel text-3xl sm:text-3xl text-pixel-gold leading-tight"
+        <span className="font-pixel text-xl sm:text-3xl text-pixel-gold leading-tight"
           style={{ textShadow: '4px 4px 0 #B8860B' }}>
           DOO
         </span>
-        <span className="font-pixel text-3xl sm:text-3xl text-pixel-pink leading-tight"
+        <span className="font-pixel text-xl sm:text-3xl text-pixel-pink leading-tight"
           style={{ textShadow: '4px 4px 0 #000' }}>
           DUEL
         </span>
@@ -115,45 +128,43 @@ function JoinRoom({ onJoin }) {
 
       {/* Card */}
       <div
-        className={`pixel-card p-6 sm:p-8 max-w-[480px] w-full flex flex-col gap-6 ${shake ? 'animate-shake' : ''}`}
+        className={`pixel-card p-4 sm:p-8 max-w-[480px] w-full flex flex-col gap-4 sm:gap-6 ${shake ? 'animate-shake' : ''}`}
         style={{ position: 'relative', zIndex: 2 }}
       >
-        {/* Hero Row */}
-        <div className="flex flex-col sm:flex-row gap-6 items-start">
+        {/* Hero Row — always flex-row to save vertical space on mobile */}
+        <div className="flex flex-row gap-4 sm:gap-6 items-start">
 
           {/* Left — hero copy */}
-          <div className="flex-1 flex flex-col gap-3">
-            <p className="font-pixel text-[18px] text-white leading-relaxed">
+          <div className="flex-1 flex flex-col gap-2 sm:gap-3 min-w-0">
+            <p className="font-pixel text-[14px] sm:text-[18px] text-white leading-relaxed">
               READY,<br />
-              {username.trim() ? username.trim().toUpperCase() : 'PLAYER 1'}?
+              <span className="block truncate">
+                {username.trim() ? username.trim().toUpperCase() : 'PLAYER 1'}?
+              </span>
             </p>
-            <p className="font-pixel text-[12px] text-pixel-dim leading-loose tracking-wide">
+            <p className="font-pixel text-[9px] sm:text-[12px] text-pixel-dim leading-loose tracking-wide">
               DRAW · VOTE · WIN
             </p>
-            <div className="flex flex-col gap-1 mt-1">
-
-            </div>
           </div>
 
           {/* Right — avatar section */}
-          <div className="flex flex-row items-start gap-2 self-center sm:self-start">
+          <div className="flex flex-row items-start gap-1 sm:gap-2 self-start flex-shrink-0">
 
             {/* Dice — top-aligned with avatar box */}
             <img
               src="/assets/dice.png"
               alt="Randomize avatar"
-              className={`w-8 h-8 cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity duration-75 mt-1
+              className={`w-6 h-6 sm:w-8 sm:h-8 cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity duration-75 mt-1
                 ${joining ? 'pointer-events-none opacity-40' : ''}`}
               style={{ imageRendering: 'pixelated' }}
               onClick={randomAvatar}
               title="Random avatar"
             />
 
-            {/* Avatar box + counter + arrows — all centered together */}
-            <div className="flex flex-col items-center gap-2">
+            {/* Avatar box + counter + arrows */}
+            <div className="flex flex-col items-center gap-1 sm:gap-2">
 
-              {/* Avatar preview box */}
-              <div className="w-32 h-32 border-4 border-pixel-border bg-pixel-bgdark overflow-hidden"
+              <div className="w-20 h-20 sm:w-32 sm:h-32 border-4 border-pixel-border bg-pixel-bgdark overflow-hidden"
                 style={{ boxShadow: '4px 4px 0 #000' }}>
                 <img
                   src={AVATARS[avatarIdx]}
@@ -164,31 +175,15 @@ function JoinRoom({ onJoin }) {
                 />
               </div>
 
-              {/* Counter */}
               <span className="font-pixel text-[8px] text-pixel-dim">
                 {avatarIdx + 1} / {AVATARS.length}
               </span>
 
-              {/* Arrow buttons */}
-              <div className="flex flex-row gap-2">
-                <button
-                  type="button"
-                  className="pixel-btn-secondary px-2 py-0.5 text-sm"
-                  onClick={prevAvatar}
-                  disabled={joining}
-                  aria-label="Previous avatar"
-                >
-                  ←
-                </button>
-                <button
-                  type="button"
-                  className="pixel-btn-secondary px-2 py-0.5 text-sm"
-                  onClick={nextAvatar}
-                  disabled={joining}
-                  aria-label="Next avatar"
-                >
-                  →
-                </button>
+              <div className="flex flex-row gap-1 sm:gap-2">
+                <button type="button" className="pixel-btn-secondary px-2 py-0.5 text-sm"
+                  onClick={prevAvatar} disabled={joining} aria-label="Previous avatar">←</button>
+                <button type="button" className="pixel-btn-secondary px-2 py-0.5 text-sm"
+                  onClick={nextAvatar} disabled={joining} aria-label="Next avatar">→</button>
               </div>
             </div>
           </div>
@@ -198,7 +193,7 @@ function JoinRoom({ onJoin }) {
         <div className="border-t-4 border-pixel-border" />
 
         {/* Form */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3 sm:gap-4">
 
           {/* Username */}
           <div className="flex flex-col gap-1">
@@ -227,19 +222,20 @@ function JoinRoom({ onJoin }) {
           {/* Room code */}
           <div className="flex flex-col gap-1">
             <label className="font-pixel text-[8px] text-pixel-dim">
-              ROOM CODE <span className="text-pixel-dim">(OPTIONAL)</span>
+              ROOM CODE <span className="text-pixel-dim">(TO JOIN)</span>
             </label>
             <input
               className="pixel-input uppercase"
               type="text"
-              placeholder="XXXX"
+              placeholder="e.g. AB12"
               value={roomId}
-              onChange={e => setRoomId(e.target.value.toUpperCase().slice(0, 4))}
+              onChange={e => setRoomId(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4))}
               maxLength={4}
               autoComplete="off"
               spellCheck={false}
               disabled={joining}
             />
+            <span className="font-pixel text-[7px] text-pixel-dim">MUST MIX LETTERS + NUMBERS</span>
           </div>
 
           {/* Error */}

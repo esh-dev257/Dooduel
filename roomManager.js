@@ -98,6 +98,7 @@ function disconnectPlayer(roomId, socketId) {
   delete room.players[socketId];
   delete room.drawings[socketId];
   delete room.votes[socketId];
+  room.skips.delete(socketId);
 
   // Remove votes cast FOR this player
   for (const [voter, votedFor] of Object.entries(room.votes)) {
@@ -161,8 +162,9 @@ function leaveRoom(roomId, socketId) {
   delete room.drawings[socketId];
   delete room.playerStats[socketId];
 
-  // Remove this player's vote
+  // Remove this player's vote and skip
   delete room.votes[socketId];
+  room.skips.delete(socketId);
 
   // Remove votes cast FOR this player
   for (const [voter, votedFor] of Object.entries(room.votes)) {
@@ -245,6 +247,7 @@ function castVote(roomId, voterSocketId, targetSocketId) {
   if (voterSocketId === targetSocketId) return { success: false, error: 'Cannot vote for yourself' };
   if (!room.players[targetSocketId]) return { success: false, error: 'Invalid target' };
   if (room.votes[voterSocketId]) return { success: false, error: 'Already voted' };
+  if (room.skips.has(voterSocketId)) return { success: false, error: 'Already skipped' };
 
   room.lastActivity = Date.now();
   room.votes[voterSocketId] = targetSocketId;
@@ -263,60 +266,47 @@ function castAnonVote(roomId, voterSocketId, anonId) {
   return castVote(roomId, voterSocketId, targetSocketId);
 }
 
+// Awards 100 pts per vote received and returns raw vote counts + tied candidates.
+// Winner bonus and tiebreaker resolution happen in gameLoop after quality ratings
+// are computed, so the final winner can be determined with full information.
 function tallyVotes(roomId) {
   const room = rooms[roomId];
   if (!room) return null;
 
-  // Count votes per player
+  // Count votes per active player only
   const voteCounts = {};
   for (const targetId of Object.values(room.votes)) {
-    voteCounts[targetId] = (voteCounts[targetId] || 0) + 1;
+    if (room.players[targetId]) {
+      voteCounts[targetId] = (voteCounts[targetId] || 0) + 1;
+    }
   }
 
-  // Find winner(s)
+  // Award 100 pts per vote, track lifetime stat
+  for (const [socketId, count] of Object.entries(voteCounts)) {
+    room.players[socketId].score += count * 100;
+    if (room.playerStats[socketId]) {
+      room.playerStats[socketId].totalVotesReceived += count;
+    }
+  }
+
+  // Find the highest vote count and all players tied at that count
   let maxVotes = 0;
-  let winners = [];
-
-  for (const [socketId, count] of Object.entries(voteCounts)) {
-    if (count > maxVotes) {
-      maxVotes = count;
-      winners = [socketId];
-    } else if (count === maxVotes) {
-      winners.push(socketId);
-    }
+  for (const count of Object.values(voteCounts)) {
+    if (count > maxVotes) maxVotes = count;
   }
 
-  // Award points: 100 per vote received, +50 bonus for winner(s)
-  // Track vote stats
-  for (const [socketId, count] of Object.entries(voteCounts)) {
-    if (room.players[socketId]) {
-      room.players[socketId].score += count * 100;
-      if (room.playerStats[socketId]) {
-        room.playerStats[socketId].totalVotesReceived += count;
-      }
-    }
-  }
-  for (const winnerId of winners) {
-    if (room.players[winnerId]) {
-      room.players[winnerId].score += 50;
-    }
-  }
+  const topCandidates = maxVotes > 0
+    ? Object.entries(voteCounts)
+        .filter(([, c]) => c === maxVotes)
+        .map(([id]) => ({
+          socketId: id,
+          username: room.players[id]?.username || 'Unknown',
+          avatar:   room.players[id]?.avatar   || null,
+          votes:    maxVotes
+        }))
+    : [];
 
-  return {
-    voteCounts,
-    winners: winners.map(id => ({
-      socketId: id,
-      username: room.players[id]?.username || 'Unknown',
-      avatar: room.players[id]?.avatar || null,
-      votes: voteCounts[id]
-    })),
-    scores: Object.fromEntries(
-      Object.entries(room.players).map(([id, p]) => [
-        id,
-        { username: p.username, score: p.score, avatar: p.avatar }
-      ])
-    )
-  };
+  return { voteCounts, topCandidates, maxVotes };
 }
 
 function getAllDrawings(roomId) {
