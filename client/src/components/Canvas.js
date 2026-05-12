@@ -359,7 +359,7 @@ function Canvas({ disabled }) {
   return (
     <div className="flex flex-col w-full h-full">
       {/* Canvas area */}
-      <div className="flex-1 flex items-center justify-center p-1 md:p-6 min-h-0 [--canvas-max-h:calc(100vh-400px)] lg:[--canvas-max-h:calc(100vh-280px)]">
+      <div className="flex-1 flex items-start lg:items-center justify-center p-1 pt-2 lg:p-6 min-h-0 [--canvas-max-h:calc(110vh-460px)] lg:[--canvas-max-h:calc(100vh-280px)]">
         <div
           className="border-4 border-pixel-border"
           style={{ boxShadow: "6px 6px 0 #000", lineHeight: 0 }}
@@ -483,7 +483,7 @@ function Canvas({ disabled }) {
           </div>
 
           {/* ── MOBILE: 3-row compact layout ── */}
-          <div className="lg:hidden flex flex-col bg-pixel-panel border-t-4 border-pixel-border flex-shrink-0 px-2 pt-1 pb-1 gap-1">
+          <div className="lg:hidden flex flex-col bg-pixel-panel border-t-4 border-pixel-border flex-shrink-0 px-2 pt-1 pb-3 gap-1">
             {/* Row 1: tool buttons + undo/clear */}
             <div className="flex flex-row items-center gap-1">
               {[
