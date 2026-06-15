@@ -1,6 +1,6 @@
 # Dooduel
 
-A real-time multiplayer draw-and-vote game. Players simultaneously draw a secret prompt, then vote anonymously on each other's artwork. Built with React, Express, and Socket.IO — no database, no accounts.
+A real-time multiplayer draw-and-vote game. Players simultaneously draw a secret prompt, then vote anonymously on each other's artwork. Built with React, Express, and Socket.IO - no database, no accounts.
 
 ---
 
