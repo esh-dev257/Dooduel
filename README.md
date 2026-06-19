@@ -57,12 +57,12 @@ curl http://localhost:3001/health
 1. Open the app, pick a username and one of 18 pixel-art avatars.
 2. **Create** a private room (4-character code) or **Join** an existing one.
 3. The host starts the game once at least 2 players have joined.
-4. **Drawing phase** — everyone draws the same prompt simultaneously.
-   - Round 1 (Easy) — 1 min 30 s
-   - Round 2 (Medium) — 1 min
-   - Round 3 (Hard) — 45 s
-5. **Voting phase** — drawings are anonymised (labeled A, B, C…). Vote for your favourite or skip. You cannot vote for your own drawing.
-6. **Results** — votes tallied, scores awarded, drawing quality ratings shown per player.
+4. **Drawing phase** - everyone draws the same prompt simultaneously.
+   - Round 1 (Easy) - 1 min 30 s
+   - Round 2 (Medium) - 1 min
+   - Round 3 (Hard) - 45 s
+5. **Voting phase** - drawings are anonymised (labeled A, B, C…). Vote for your favourite or skip. You cannot vote for your own drawing.
+6. **Results** - votes tallied, scores awarded, drawing quality ratings shown per player.
 7. After 3 rounds the **Game Over** screen shows final rankings, achievements, best-drawing collage, and share options.
 
 ---
